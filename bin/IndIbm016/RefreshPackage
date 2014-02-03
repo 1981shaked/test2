@@ -1,0 +1,339 @@
+#!/bin/ksh
+
+####################################################################
+#
+# Name    : RefreshPackage
+# Purpose : Refreshing all the files which are assosiated with all 
+#           the packages in a specified state and enviroment name.
+#
+# Usage   : RefreshPackage -u <har_user> -p <har_pass> -e <env_name> -s <state_name>
+#	      -h  Show usage.
+#             -e  Harvest Enviroment name
+#             -p  Harvest Password
+#             -s  Harvest State name
+#
+# Example : RefreshPackage -u mb_ccmbl  -p **** -e "Tasks 330" -s "Build"
+#
+# Author  : Malka Sulimani.
+# Date    : 2/4/2002
+# Updated : Natalia H  12/12/2005
+#####################################################################
+
+############ Checking input ##################
+
+if [ "$1" = "-h" ]
+then
+       echo "\nUsage:"
+        echo "-----"
+        echo "       RefreshPackage -u <har_user> -p <har_pass> -e <env_name> -s <state_name>\n"
+        echo "       -h  Show usage."
+        echo "       -e  Harvest Enviroment name"
+        echo "       -u  Harvest User"
+        echo "       -p  Harvest Password"
+        echo "       -s  Harvest State name\n"
+        echo "Example:"
+        echo "-------"
+        echo "       RefreshPackage -u malkas -p **** -e \"Tasks 330\" -s \"Build Approval\"\n"
+        exit
+fi
+
+until [ $# -lt 2 ] 
+do
+        case "$1" in
+                "-e") env_name=$2 ;;
+                "-u") har_user=$2 ;;
+                "-p") har_pass=$2 ;;
+		"-s") state_name=$2 ;;
+        esac
+
+        shift
+        shift
+done
+
+
+#getting missing parameters from the user command line
+if [ "$env_name" = "" ]
+then
+	echo "\nPlease write the Harvest Enviroment name (e.g. Tasks 330):"
+	read env_name
+fi
+
+if [ "$state_name" = "" ]
+then
+        echo "\nPlease write the Harvest State name (e.g. Build):"
+        read state_name
+fi
+
+if [ "$har_user" = "" ]
+then
+        echo "\nPlease write the Harvest User:"
+        read har_user
+fi
+
+if [ "$har_pass" = "" ]
+then
+        echo "\nPlease write the Harvest Password:"
+        read har_pass
+fi
+
+############ Initializations #################
+
+time_stamp=`timestamp`
+log_dir=$HOME/log.refresh_package
+mkdir -p $HOME/log.refresh_package
+refresh_log=$log_dir/refresh.$time_stamp.log
+touch $refresh_log
+tmp_dir_list=/tmp/tmp_dir_list.$time_stamp.log
+tmp_dir_list1=/tmp/tmp_dir_list1.$time_stamp.log
+tmp_deleted_files=/tmp/tmp_deleted_files.$time_stamp.log
+deleted_files=/tmp/deleted_files.$time_stamp.log
+tmp_ver=/tmp/tmp_ver.$time_stamp.log
+dir_list=/tmp/dir_list.$time_stamp.log
+tmp_files_list=/tmp/tmp_files_list.$time_stamp.log
+files_list=/tmp/files_list.$time_stamp.log
+
+
+###############  Functions  ###################
+
+#################################################################
+# This function returns the version of a given BB in
+# a specified Harvest environment
+#################################################################
+
+function GetVer
+{
+
+rm -f $tmp_ver
+touch $tmp_ver
+
+sqlplus -s $HAR_REPORT_USER/$HAR_REPORT_PASS@$HAR_TWO_TASK <<END3> $tmp_ver
+set head off
+set feed off
+set pages 0
+
+select distinct(BV.VERSIONNAME)
+from AMDBB B, HARENVIRONMENT E , AMDPROJECT_BBVERS PB,  AMDBBVERSION BV
+where B.BBNAME='$bb_name' 
+and B.BBID=BV.BBID
+and BV.BBVERSIONID=PB.BBVERID
+and PB.ENVOBJID=E.ENVOBJID
+and E.ENVIRONMENTNAME='$env_name';
+
+END3
+
+}
+
+#################################################################
+# This function put into a file the directories path of 
+# files which are located in a specified state
+#################################################################
+
+function DirList 
+{
+
+rm -f $dir_list $tmp_dir_list $tmp_dir_list1
+touch $dir_list $tmp_dir_list $tmp_dir_list1
+
+sqlplus -s $HAR_REPORT_USER/$HAR_REPORT_PASS@$HAR_TWO_TASK <<END>> $tmp_dir_list1
+set head off
+set feed off
+set pages 0
+SELECT PFN.PATHFULLNAME FROM HARVERSIONS V, 
+HARITEMS I, HARPATHFULLNAME PFN WHERE V.PACKAGEOBJID in ( 
+	SELECT P.PACKAGEOBJID FROM HARPACKAGE P, HARENVIRONMENT E, 
+	HARSTATE S WHERE TRIM(E.ENVIRONMENTNAME) = '$env_name' 
+	AND TRIM(S.STATENAME) = '$state_name' AND P.ENVOBJID = E.ENVOBJID 
+	AND S.ENVOBJID = E.ENVOBJID AND P.STATEOBJID = S.STATEOBJID	
+	) 
+AND I.ITEMOBJID = V.ITEMOBJID 
+AND I.ITEMTYPE = 1 
+AND PFN.ITEMOBJID = I.PARENTOBJID 
+ORDER BY 1;
+
+END
+
+#getting the list of dirs uniqe 
+cat $tmp_dir_list1 | sort -u >> $tmp_dir_list
+
+}
+
+#################################################################
+# This function put into a file all the files that are related
+# to given dir and are in a specified state and are with 'N' tag
+#################################################################
+
+function FilesList
+{
+
+rm -f $tmp_files_list $files_list
+touch $tmp_files_list $files_list
+
+sqlplus -s $HAR_REPORT_USER/$HAR_REPORT_PASS@$HAR_TWO_TASK <<END1>> $tmp_files_list
+set head off
+set feed off
+set pages 0
+SELECT I.ITEMNAME
+FROM HARPACKAGE P, HARENVIRONMENT E, HARSTATE S, 
+HARVERSIONS V, HARITEMS I, HARPATHFULLNAME PFN WHERE 
+TRIM(E.ENVIRONMENTNAME) = '$env_name' AND TRIM(S.STATENAME) = '$state_name'
+AND V.VERSIONSTATUS='N'
+AND P.ENVOBJID = E.ENVOBJID AND S.ENVOBJID = E.ENVOBJID 
+AND P.STATEOBJID = S.STATEOBJID AND V.PACKAGEOBJID = P.PACKAGEOBJID 
+AND I.ITEMOBJID = V.ITEMOBJID AND I.ITEMTYPE = 1 
+AND PFN.ITEMOBJID = I.PARENTOBJID 
+AND PFN.PATHFULLNAME = '$view_path'
+order by 1;
+
+END1
+
+#getting the list of files uniqe
+cat $tmp_files_list | sort -u >> $files_list
+
+}
+
+#################################################################
+# This function put into a file all the files that are related
+# to given dir and are in a specified state and are with 'D'
+# tag - list of deleted files
+#################################################################
+
+function DeletedFiles
+{
+
+rm -f $tmp_deleted_files $deleted_files
+touch $tmp_deleted_files $deleted_files
+
+sqlplus -s $HAR_REPORT_USER/$HAR_REPORT_PASS@$HAR_TWO_TASK <<END1>> $tmp_deleted_files
+set head off
+set feed off
+set pages 0
+SELECT I.ITEMNAME
+FROM HARPACKAGE P, HARENVIRONMENT E, HARSTATE S, 
+HARVERSIONS V, HARITEMS I, HARPATHFULLNAME PFN WHERE 
+TRIM(E.ENVIRONMENTNAME) = '$env_name' AND TRIM(S.STATENAME) = '$state_name'
+AND V.VERSIONSTATUS='D'
+AND P.ENVOBJID = E.ENVOBJID AND S.ENVOBJID = E.ENVOBJID 
+AND P.STATEOBJID = S.STATEOBJID AND V.PACKAGEOBJID = P.PACKAGEOBJID 
+AND I.ITEMOBJID = V.ITEMOBJID AND I.ITEMTYPE = 1 
+AND PFN.ITEMOBJID = I.PARENTOBJID 
+AND PFN.PATHFULLNAME = '$view_path'
+order by 1;
+
+END1
+
+#getting the list of files uniqe
+cat $tmp_deleted_files | sort -u >> $deleted_files
+
+dfile_size=`find $deleted_files -size 0`
+if [ "$dfile_size" = "" ]
+then
+#there are deleted files
+	echo "Deleting the files from FS: `more $deleted_files`" |tee -a $refresh_log
+	echo "--------------------------" |tee -a $refresh_log
+	for dfile in `cat $deleted_files`
+	{
+		rm_cmd="rm -f $client_path/$dfile"
+		echo $rm_cmd | tee -a $refresh_log
+		$rm_cmd 
+	}
+fi
+
+}
+
+#################################################################
+# This function checkout files
+#################################################################
+
+function CheckOut
+{
+files="`more $files_list`"
+
+echo "\nChecking Out the files: $files" | tee -a $refresh_log
+echo "-----------------------" | tee -a $refresh_log
+
+echo "hco $files -br -r -b $BROKERNAME -en \"$env_name\" -st \"$state_name\" -vp \"$view_path\" -pn \"$process_name\" -cp \"$client_path\" -usr $har_user -pw ***** -o /tmp/hco.$time_stamp.log" | tee -a $refresh_log
+
+hco $files -br -r -b $BROKERNAME -en "$env_name" -st "$state_name" -vp "$view_path" -pn "$process_name" -cp "$client_path" -usr $har_user -pw $har_pass -o /tmp/hco.$time_stamp.log | tee -a $refresh_log
+
+cat /tmp/hco.$time_stamp.log | tee -a $refresh_log
+
+check_hco=`grep -c -e "E0" -e "Invalid Version List for " /tmp/hco.$time_stamp.log`
+
+if [ $check_hco != 0 ]
+then
+        echo "\nError : Failed to Check Out files: "$files"" | tee -a $refresh_log
+else
+        echo "\nThe files: "$files" ,  were Checked Out successfully.\n" | tee -a $refresh_log
+fi
+
+
+}
+
+###################  Main  ####################
+
+echo "enre no files to work onStart processing information regarding files to Refresh ...\n" | tee -a $refresh_log
+
+#if [ "$pack_name" = "" ]
+#then
+	# a call to the function DirList
+	DirList
+#else
+#	PackDirList
+#fi
+
+file_size=`find $tmp_dir_list -size 0`
+if [ "$file_size" != "" ]
+then
+	echo "\nThere are no files to work on, in State $state_name" | tee -a $refresh_log
+	echo "  Quiting ..." | tee -a $refresh_log
+	exit
+fi
+
+perl -e 's/\\/\//g' -pi $tmp_dir_list
+
+#working on each of the dir's except the one's of the Java and Online
+
+for rep_dir in `cat $tmp_dir_list | grep -v "^/mbloln/" | grep -v "^/server/" | grep -v "^/wwwBVlvs/" | grep -v "^/wwwCOMMONamd/" `
+{
+	
+	rm -f $dir_list
+	touch $dir_list
+
+	echo $rep_dir >> $dir_list
+	perl -e 's/\//\\/g' -pi $dir_list
+	view_path=`cat $dir_list`
+        if [ "$env_name" = "Infra" ]
+        then
+                is_proj=`echo $rep_dir | awk -F "\/" '{print $2}'`
+                if [[ "$is_proj" = "proj" ||  "$is_proj" = "product" ||  "$is_proj" = "module" ]]
+                then
+                        client_path="${HOME}${rep_dir}"
+                else
+                        client_path="${HOME}/bb${rep_dir}"
+                fi
+                process_name="Version Internal"
+	else
+		bb_name=`echo $rep_dir | awk -F "\/" '{print $2}'`
+		GetVer
+		ver=`cat $tmp_ver`
+		temp=`echo $rep_dir | awk -F "$bb_name" '{print $2}'`
+		client_path="${HOME}/bb/${bb_name}/${ver}${temp}"
+		process_name="Version Internal"
+	fi
+	echo "\n$client_path" | tee -a $refresh_log
+	echo "*******************************************************\n" | tee -a $refresh_log
+	
+	FilesList 
+	DeletedFiles
+	check_size=`find $files_list -size 0`
+	if [ "$check_size" = "" ]
+	then
+	#there are files to check out	
+		CheckOut
+	fi
+
+}
+
+echo "\nThe log is at: $refresh_log\n"
+
+

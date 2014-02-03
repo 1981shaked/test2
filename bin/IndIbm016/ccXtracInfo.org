@@ -1,0 +1,56 @@
+#! /usr/local/bin/tcsh -f
+
+##############################################################
+# File Name:ccXtracInfo
+# Purpose:Get all XC info base on last set_prod                            
+# Usage : NA           
+# Date: 01/05/2011                                                       
+# Autor: Dror Baruch
+##############################################################
+
+
+set bkrname = `echo $BROKERNAME | awk -F/ '{print $2}'`
+set username = `cat $HARVESTHOME/config/$bkrname/bin/db.setup | grep username |awk -F= '{print $2}'`
+set pass = $username
+set dbname = `cat $HARVESTHOME/config/$bkrname//bin/db.setup | grep dbUrl | awk -F: '{print $6}'`
+
+set time_stamp=`timestamp`
+set tmp_ver=/tmp/$bkrname.$time_stamp
+set tmp_url=/tmp/$bkrname.url.$time_stamp
+
+
+
+
+#sqlplus -s $username/$pass@$dbname <$HOME/Dror/ccXtraCPatch_ver.sql
+sqlplus -s $username/$pass@$dbname  >! $tmp_ver  << END
+set head off
+select max (AMDPATCH) from amdpatches;
+exit
+END
+
+sqlplus -s $username/$pass@$dbname  >! $tmp_url << END
+set head off
+select ALIASVALUE from AMDHARALIASES where ALIASNAME = 'WEB_REPORTS_SITE';
+exit
+END
+
+
+echo "***********************************************"
+echo "                                            ***"
+echo "The XC information based on last set_prod : ***"
+echo "                                            ***"
+echo "Broker name : $BROKERNAME                 ***"
+echo "XC Instance : $dbname                      ***"
+echo "XC User Name : $username                       ***"
+echo "XC DB password : $pass                     ***"
+echo "                                            ***"
+echo "XC patch is:                                ***"
+echo "--------------                              ***"
+cat $tmp_ver| grep "^[0-9]"
+echo "                                            ***"
+echo "XC URL is:                                  ***"
+echo "--------------                              ***"
+cat $tmp_url| grep "^h"
+echo "                                            ***"
+echo "***********************************************"
+echo "***********************************************"

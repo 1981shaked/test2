@@ -1,0 +1,229 @@
+#!/usr/local/bin/tcsh -f
+#
+#########################################################################################################
+#                                                                                         		#
+# Name    : ccMemUsg                                                                       		#
+# Purpose : Check the Project Products (Exe ,Object) for large Memory consumption,        		#
+#           and create a report for the problematic products .                            		#
+#	    The script produces report for executables or objects (-e | -o)		  		#
+#		1. Relatively Largest Memory Consumption in given Project  				#
+#		2. Largest Memory Consumption addition in % from Project to Backup     			#
+#                  Can be used before backup to find additions to MC due to new products.               #
+#                                                                                         		#
+# Author  : Doron Kapitulnik                                                 		                #
+# Supervisure:												# 
+# Update  : 18-FEB-08 : Adi Levy : Changes / Modification for using Line variables                      #
+#													#
+#########################################################################################################
+
+if ( ! $?LINE_BASE ) then
+
+	if ( $?CCPRODUCT ) then
+		setenv LINE_XTRAC_PROD $CCPRODUCT
+	else if ( $?CCPROD ) then
+		setenv LINE_XTRAC_PROD $CCPROD
+	else
+		setenv LINE_XTRAC_PROD X
+	endif
+	setenv LINE_PROD_NAME $LINE_XTRAC_PROD
+
+	setenv CC_MASTER 	$CCPROJECTHOME
+	setenv suffix 		`echo $CCPROJ | sed 's/_1$//' | sed 's/V64OG//g' | sed 's/V64//g' | sed 's/V32//g' | sed 's/[0-9][a-zA-DF-Z]//g' | sed 's/[a-zA-DF-Z_]//g'`
+	setenv cc_ver 		v`echo $suffix | cut -c1-2`_`echo $suffix | cut -c3`
+	setenv Line_Proj_Var 	`echo $CCPROJ | sed "s/^.*$suffix//"`
+	setenv LINE_LOG 	$CC_MASTER/Line/Data
+	setenv LINE_DATA_HOME 	$LINE_LOG/$suffix
+	setenv LINE_BIN 	$CC_MASTER/Line/v01
+
+	mkdir -p $LINE_DATA_HOME
+
+	cd $LINE_DATA_HOME
+	if ( ! -s set_prod ) then
+		rm -f bbs.inf bbs.app set_prod
+		touch bbs.inf
+		$HOME/bin/show_str.pl -P $LINE_XTRAC_PROD -v $cc_ver | awk -F: '{print "sp -P "$1" -v X -c X -r "$3" -m "$2" -p "$4" -b "$5}' | sed "s/$Line_Proj_Var//g" > set_prod
+		$HOME/bin/show_str.pl -P $LINE_XTRAC_PROD -v $cc_ver | awk -F: '{print $4,$5,$6}' | sed "s/$Line_Proj_Var//g" | sed 's/$/ '$LINE_PROD_NAME'/g' > bbs.app
+	endif
+
+	if ( $ARCH == "SunOS" ) then
+		alias grep /usr/xpg4/bin/grep
+	endif
+	set     bbs_full = `grep -w $LINE_PROD_NAME $LINE_DATA_HOME/bbs.??? | awk '{print $2"/"$3}' | sort -u`
+	alias   SearchCC 'cd $CC_MASTER/bb; find $bbs_full -type f -name \!#:1 -print | grep -v -e harvest.sig -e projs_lst | grep -v bb_profile'
+
+else
+	source $LINE_BIN/line.cshrc_version
+endif
+
+set OutPut = $LINE_DATA_HOME/ccMemUsg.rep
+rm -f $OutPut; touch $OutPut
+
+set Num = 20
+set Project = ""
+set Action = ""
+set CProject = ""
+
+set Sum = 0
+set CSum = 0
+set Percent = 0
+set Change = 0
+
+set MailAddrs = ()
+
+while ( $#argv != 0 )
+	switch ( "$1" )
+	case "-p":
+		set Project = $2
+		if ( `grep -c -w $Project $LINE_DATA_HOME/bbs.app` == 0 ) then
+			echo "ERROR: Invalid project name $Project"
+			goto USAGE
+		endif
+		shift
+		breaksw
+	case "-o":
+		set Action = "Obj"
+		breaksw
+	case "-e":
+		set Action = "Exe"
+		breaksw
+	case "-n":
+		set Num = $2
+		shift
+		breaksw
+	case "-m":
+		set MailAddrs = ( $MailAddrs $2 )
+		shift 
+		breaksw
+		;;
+	case "-c":
+		# This option is working always. Compare to backup proj area. Skipping the input project value given.
+		# Add new option: Compare to different version project.
+		set CProject = $2
+		shift
+		breaksw
+	case "-s":
+		# This option is working always (Add summary to report)
+		breaksw
+	default:
+		echo "ERROR: Unrecognized option $1"
+		goto USAGE
+		breaksw
+	endsw
+	shift
+end
+
+if ( "$Project" == "" ) then 
+	echo "\nMissing Project to work on."
+	goto USAGE
+endif
+
+set Project = $Project$Line_Proj_Var
+
+if ( "$CProject" == "$Project" ) then
+	echo "\nCannot compare $Project to $CProject. Same project"
+	goto USAGE
+else if ( "$CProject" != "" && `echo $CProject | sed 's/[0-9]//g'` != `echo $Project | sed 's/[0-9]//g'` ) then
+	echo "\nCannot compare different projects. Only same project with different versions"
+	goto USAGE
+endif
+
+if ( "$CProject" == "" ) then
+	set CProdBase = $CC_MASTER/proj/back_$Project
+else
+	set CProdBase = $CC_MASTER/proj/$CProject
+endif
+
+if ( "$Action" == "Exe" ) then
+	set ProdArea = $CC_MASTER/proj/$Project/bin
+	set CProdArea = $CProdBase/bin
+	set ProdType = "*"
+else if ( "$Action" == "Obj" ) then
+	set ProdArea = "$CC_MASTER/proj/$Project/*"
+	set CProdArea = "$CProdBase/*"
+	set ProdType = "*.o"
+else
+	echo "\nMissing work element Executables/Objects (-e | -o)"
+	goto USAGE
+endif
+
+set SizeProjRep = $LINE_DATA_HOME/ccMemUsg.$Project
+set CSizeProjRep = $LINE_DATA_HOME/ccMemUsg.$Project.CP
+set TmpFile = $LINE_DATA_HOME/ccMemUsg.Temp
+
+rm -f $SizeProjRep; touch $SizeProjRep
+rm -f $CSizeProjRep; touch $CSizeProjRep
+rm -f $TmpFile ; touch $TmpFile
+
+( size $ProdArea/$ProdType  | awk -F"/" '{print $NF}' | awk '{print $1,$6}' >  $SizeProjRep ) >& /dev/null
+( size $CProdArea/$ProdType | awk -F"/" '{print $NF}' | awk '{print $1,$6}' > $CSizeProjRep ) >& /dev/null
+
+if ( "$CProject" == "" ) then
+	printf "\n%10s%12s%8s%11s\n" Backup $Project % $Action >> $OutPut
+else
+	printf "\n%10s%12s%8s%11s\n" $CProject $Project % $Action >> $OutPut
+endif
+printf "%10s%10s%6s%10s\n" "========" "========" "===" "=====" >> $OutPut
+
+foreach file ( `cat $SizeProjRep | awk -F: '{print $1}'` )
+	if ( `grep -c -w $file $CSizeProjRep` == 1 ) then
+		set Size = `grep -w $file $SizeProjRep | grep ^$file':' | awk '{print $2}'` ; @ Size = $Size / 1024
+		set CSize = `grep -w $file $CSizeProjRep | grep ^$file':' | awk '{print $2}'` ; @ CSize = $CSize / 1024
+		@ Sum = $Sum + $Size
+		@ CSum = $CSum + $CSize
+		@ Percent = 0
+		@ Change = $Size - $CSize
+		if ( $CSize != 0 ) then
+			@ Percent = ( $Change * 100 ) / $CSize
+		endif
+		if ( "$Percent" != 0 ) then
+			printf "%6d kb      %6d kb     %4d%%      %s\n" $CSize $Size $Percent $file >> $TmpFile
+		endif
+	endif
+end
+@ Sum_mb = $Sum / 1024
+@ CSum_mb = $CSum / 1024
+@ Change = $Sum_mb - $CSum_mb
+@ Percent = 0
+if ( $CSum_mb != 0 ) then
+	@ Percent = ( $Change * 100 ) / $CSum_mb
+endif
+printf "\n%6d Mb    %6d Mb     %4d%%      All project %ss\n\n" $CSum_mb $Sum_mb $Percent $Action >> $OutPut
+
+cat $TmpFile | sort -rn | grep "[a-z]" | head -100 >> $OutPut
+
+rm -f $TmpFile ; touch $TmpFile
+
+echo "\nLargest $Num Memory Consumption $Action in $Project project\n" >> $OutPut
+
+foreach file ( `cat $SizeProjRep | awk -F: '{print $1}'` )
+	set Size = `grep -w $file $SizeProjRep | grep ^$file':' | awk '{print $2}'` ; @ Size = $Size / 1024
+	if ( "$Size" != 0 ) then
+		echo "\t$Size kb \t$file" >> $TmpFile
+	endif
+end
+
+cat $TmpFile | sort -rn | grep "[a-z]" | head -$Num >> $OutPut
+
+# Output to stdout
+# -----------------
+
+if ( $#MailAddrs == 0 ) then
+	cat $OutPut
+else
+	cat $OutPut | mailx -r "$suffix $LINE_PROD_NAME" -s "$LINE_PROD_NAME - `basename $0` v$suffix $HOST" $MailAddrs
+endif
+
+rm -f $TmpFile $SizeProjRep $CSizeProjRep
+
+exit
+
+USAGE:
+
+echo "\nUsage: $0:t -p <project> ( -o | -e ) [-n <number>] [-m <mail addr> ... -m <mail addr>]\n"
+echo "   -p Project. (without variant)"
+echo "   -c Compare to different version project"
+echo "   -o List for largest Memory Consumption objects"
+echo "   -e List for largest Memory Consumption Executables"
+echo "   -n Number of printed executables/objects"
+echo "   -m Mail address or Mail group in ~/.mailrc\n"
+

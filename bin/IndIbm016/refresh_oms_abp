@@ -1,0 +1,32 @@
+#!/usr/local/bin/tcsh
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+set VER = $1
+set VVER = v"$VER"
+set VVER1 = `echo $VVER | cut -c1-3`
+set VVER2 = `echo $VVER | cut -c4-4`
+set VVE_R = `echo $VVER1"_"$VVER2`
+
+
+
+if ($#argv != 1) then
+   echo "Example: refresh_oms_abp <version> "
+   echo "Example: refresh_oms_abp 802 "
+   exit (1)
+endif
+
+refresh -XML -execute -Bb cord9impl -t abp -machine $HOST -v $VER
+
+echo "Accessing the directory ${HOME}/bb/cord9impl/${VVE_R}/abp"
+cd ${HOME}/bb/cord9impl/${VVE_R}/abp
+
+#scp -r file_name  user@server:~/location_on_abp
+scp -r AmdocsCore.jar mb_ccbsi@sphpp401:~/SyncJarCPC/NEW_JAR
+scp -r omsconnectors-interfaces.jar mb_ccbsi@sphpp401:~/SyncJarCPC/NEW_JAR
+scp -r omsconnectors.jar mb_ccbsi@sphpp401:~/SyncJarCPC/NEW_JAR
+scp -r AmdocsProcMgrBase.jar mb_ccbsi@sphpp401:~/SyncJarCPC/NEW_JAR

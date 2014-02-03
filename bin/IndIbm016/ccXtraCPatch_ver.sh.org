@@ -1,0 +1,23 @@
+#! /usr/local/bin/tcsh -f
+
+
+set bkrname = `echo $BROKERNAME | awk -F/ '{print $2}'`
+set username = `cat $HARVESTHOME/config/$bkrname/bin/db.setup | grep username |awk -F= '{print $2}'`
+set pass = $username
+set dbname = `cat $HARVESTHOME/config/$bkrname//bin/db.setup | grep dbUrl | awk -F: '{print $6}'`
+
+set time_stamp=`timestamp`
+set tmp_ver=/tmp/$bkrname.$time_stamp
+
+
+
+
+#sqlplus -s $username/$pass@$dbname <$HOME/Dror/ccXtraCPatch_ver.sql
+sqlplus -s $username/$pass@$dbname  >! $tmp_ver  << END
+set head off
+select max (AMDPATCH) from amdpatches;
+exit
+END
+
+echo The XC version of the broker $BROKERNAME is :
+cat $tmp_ver

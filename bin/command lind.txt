@@ -1,0 +1,35 @@
+build numbers:
+ls AMSS* -tr | tail -6 | cut -d . -f1 | cut -d _ -f3,4 | sort -n 
+
+********The Small build number, each number that smaller then this number should be deleted*******
+
+ls -tr AMSS_bb* | tail -3 | head -1 |  cut -d . -f1 | cut -d _ -f5 | sort -n
+ls -tr AMSS_bb* | tail -6 | cut -d . -f1 | cut -d _ -f5 | sort -n
+
+
+
+set x = `ll -tr AMSS*_775*.tar.gz | wc -l`
+
+
+
+
+
+set x = `ll -tr AMSS*_775*.tar.gz | wc -l`
+set y = ` expr $x -7 `
+ll -tr AMSS*_775*.tar.gz | head -$y
+
+
+if ($#y >> 7) then
+	echo " #y files will be removed, please check ~/tmp/tzvi/File2Delete "
+	
+	exit (1)
+
+	
+
+
+if ($#argv != 3) then
+   echo "Example: run_Promote <product> <version> <variant>"
+   echo "Example: run_Promote lel 750 64OG"
+   exit (1)
+
+endifendif

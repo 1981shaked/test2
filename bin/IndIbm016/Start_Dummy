@@ -1,0 +1,16 @@
+#!/usr/local/bin/tcsh
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+echo "running Dummy now"
+
+#  increase the build counter
+#$HARVESTDIR/bin/refresh -B -machine $HOST -pd $1 -v $2
+
+#build commnad
+echo "running setenv LIBPATH on 16"
+setenv LIBPATH /oravl01/oracle/10.2.0.3/lib:/oravl01/oracle/10.2.0.3/lib32:${LIBPATH}

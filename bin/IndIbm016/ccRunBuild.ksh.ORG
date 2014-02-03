@@ -1,0 +1,213 @@
+#!/usr/local/bin/tcsh 
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+
+set MFlag = "0"
+set NRFlag = "0"
+set NPFlag = "0"
+set PARAM = ""
+if ( "$1" != "-n" || "$1" == "-h" || "$3" != "-v" || "$5" != "-vrt" || "$7" != "-mode" ) then
+	goto EXIT
+endif
+if ( "$7" == "-mode" && "$8" == "" ) then
+        goto EXIT
+endif
+if ( "$8" != "prod" && "$8" != "proj" && "$8" != "nc" ) then
+	echo "\nMode can be only the following : prod , proj or nc.\n"
+        goto EXIT
+endif
+
+set Bflag = "$8"
+
+if ( "$9" != "-sm" && "$11" != "" && "$11" != "-NR" && "$11" != "NP" ) then
+	goto EXIT
+endif
+if ( "$9" == "-sm" && "$10" == "" ) then
+	goto EXIT
+endif
+if ( "$9" == "-NR" || "$10" == "-NR" || "$11" == "-NR" || "$12" == "-NR" ) then
+	set NRFlag = "1"
+endif
+if ( "$9" == "-NP" || "$10" == "-NP" || "$11" == "-NP" || "$12" == "-NP" ) then
+        set NPFlag = "1"
+endif
+if ( "$9" == "-sm" ) then
+	set MFlag = "1"
+        set Mail = "$10" 
+endif
+if ( "$11" != "-NR" && "$11" != "" && "$11" != "-NP" ) then
+        goto EXIT
+endif
+if ( "$12" != "-NP" && "$12" !=  "-NR" && "$12" != "" ) then
+        goto EXIT
+endif
+
+set PROD = "$2" 
+if ( ! -d $HOME/product/$PROD ) then
+	echo "\nProduct $PROD doesn't exsit under $HOME/product\n" 
+	goto EXIT
+endif
+set VER = "$4"
+set VVER = v"$VER"
+set VVER1 = `echo $VVER | cut -c1-3`
+set VVER2 = `echo $VVER | cut -c4-4`
+set VVE_R = `echo $VVER1"_"$VVER2`
+if ( ! -d $HOME/"$VVER" ) then
+        echo "\nVersion $VVER doesn't exist under CC home directory\n"
+	goto EXIT
+endif
+
+set VAR = "$6"
+set RealVar = `cat $HOME/product/$PROD/$VVER/config/product_variants`
+
+set VARF = "0"
+foreach var (`echo $RealVar`)
+	if ( "$var" == "$VAR" ) then 
+		set VARF = "1"
+	endif
+end
+if ( "$VARF" == "0" ) then
+	echo "\nThe variant $VAR doesn't exist on $HOME/product/$PROD/$VVER/config/product_variants file\n"
+        goto EXIT
+endif
+
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+set TimeStemp = `which timestamp`
+set PromteLog = $HOME/log/"$PROD"_run_Promote."$VVER".`$TimeStemp`
+set CronTabLog = $HOME/log/"$PROD".crontab."$VVER".`$TimeStemp`
+
+
+
+
+if ( $NRFlag == "1" ) then
+	set PARAM = "-NR"
+endif
+
+if ( $NPFlag == "1" ) then
+        set PARAM = "-NP"
+endif
+
+if ( $NRFlag == "1" && $NPFlag == "1" ) then
+	set PARAM = "-NR -NP"
+endif
+
+set_prod -P $PROD -r $VVER
+
+$HOME/bin/ccPreBuild.tcsh $PROD $VER $VAR $PARAM > $PromteLog
+
+if ( $MFlag == "1" ) then
+        set Build_Num = `$HARVESTDIR/bin/buildCounter Daily $VER 0 $PROD | grep : | awk -F: '{print $2}'`
+        set Mail_Log = "/tmp/Mail_Log.`$TimeStemp`"
+        touch $Mail_Log
+        echo "Hi All\n" >> $Mail_Log
+        echo "The build $Build_Num for $PROD version $VER was started.\n" >> $Mail_Log
+        echo "Thanks : CC team\n" >> $Mail_Log
+        mailx -s "Start build $Build_Num for $PROD" $Mail < $Mail_Log
+endif
+
+if ( -f $HOME/ccRunBuild/$VER/config/ccPreCustBuild.config ) then
+	foreach Line ("`cat $HOME/ccRunBuild/$VER/config/ccPreCustBuild.config`") 
+		set Prod = `echo $Line | awk -F: '{print $1}'`
+		set Command = `echo $Line | awk -F: '{print $2}'`
+		if ( "$PROD" == "$Prod" || "$Prod" == "all" ) then
+			echo running $Command
+			eval	$Command
+		endif
+	end
+endif	
+
+if ( $Bflag == "prod" || $Bflag == "nc" ) then
+	Create_ini -n $PROD -v $VVER -l $VAR
+endif
+
+if ( $Bflag == "proj" ) then
+        Create_ini -n $PROD -v $VVER -l $VAR -c
+endif
+
+if ( $PROD == "aps" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob -SM -SW Module -AsItIs > $CronTabLog
+endif
+if ( $PROD == "int" ) then
+        hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob -SM -SW Module -AsItIs > $CronTabLog
+endif
+
+
+if ( $PROD == "asms" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	$HOME/bin/ccManProdRep.ksh ~/bb/cabm9som/$VVE_R/mp/src -v $VVE_R -P $PROD -m $EMAILADDRESS
+endif
+if ( $PROD == "amss" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	$HOME/bin/ccManProdRep.ksh ~/bb/cbe9_deploy/$VVE_R/mp/src -v $VVE_R -P $PROD -m $EMAILADDRESS
+endif
+if ( $PROD == "crm" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -SM -SW Module -AsItIs > $CronTabLog
+	#hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	#$HOME/bin/ccManProdRep.ksh ~/bb/ccrm9Configuration/$VVE_R/mp/src  -v $VVE_R -P $PROD -m $EMAILADDRESS
+endif
+if ( $PROD == "lel" ) then
+	if ( $Bflag == "prod" ) then
+		hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -cleanAll > $CronTabLog
+	endif
+	if ( $Bflag == "proj" ) then
+		hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	endif
+	if ( $Bflag == "nc" ) then
+                hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -b Incremental -d 7 > $CronTabLog
+        endif
+	$HOME/bin/ccManProdRep.ksh ~/bb/cgn9tools/$VVE_R/mp/src -v $VVE_R -P $PROD -m $EMAILADDRESS
+endif
+if ( $PROD == "oms" ) then
+	#hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -SM -SW Module -AsItIs > $CronTabLog
+	$HOME/bin/ccManProdRep.ksh ~/bb/cord9utilities/$VVE_R/mp/src -v $VVE_R -P $PROD -m $EMAILADDRESS
+	#  increase the build counter
+	#$HARVESTDIR/bin/refresh -B -machine $HOST -pd $PROD -v $VER
+endif
+if ( $PROD == "cramer" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	$HOME/bin/ccManProdRep.ksh ~/bb/crm9/$VVE_R/mp/src -v $VVE_R -P cramer  -m $EMAILADDRESS
+endif
+if ( $PROD == "aps" ) then
+	hbuild_product -n $PROD -v $VVER -t $VAR -b Module -DB -ob Module -AsItIs > $CronTabLog
+	$HOME/bin/ccManProdRep.ksh ~/bb/caps9app/$VVE_R/mp/src -v $VVE_R -P aps  -m $EMAILADDRESS
+endif
+
+set SFlag=`cat $HOME/log/ccManProdRep.ksh/ccManProdRep.$PROD.$VER.rep | grep "Build passed"`
+#if ( "$SFlag" != "" ) then
+	#$CCMNGRHOME/bin/CCSwitch -v $VVER -pd $PROD -vrt $VAR
+#endif
+
+if ( -f $HOME/ccRunBuild/$VER/config/ccPostCustBuild.config ) then
+        foreach Line ("`cat $HOME/ccRunBuild/$VER/config/ccPostCustBuild.config`")
+                set Prod = `echo $Line | awk -F: '{print $1}'`
+                set Command = `echo $Line | awk -F: '{print $2}'`
+                if ( "$PROD" == "$Prod" || "$Prod" == "all" ) then
+                       echo running $Command
+                       eval $Command
+                endif
+        end
+endif
+
+if ( -f $HOME/bin/ccPostBuild.tcsh ) then
+	$HOME/bin/ccPostBuild.tcsh $PROD $VER $VAR
+endif	
+
+exit
+
+EXIT:
+       echo "\nUsage : ccRunBuild.ksh -n < Product > -v < Version > -vrt < variant > -mode < Build Mode > [ -sm < Email > ] [ -NR ] [ -NP ]"
+       echo "	-n    Product Name"
+       echo "	-v    Version Number" 
+       echo "	-vrt  Variant Number"
+       echo "        -mode Build Mode ( prod - Product clean , proj - Project clean , nc - Incremental for last 7 days.)"
+       echo "	-sm   Email Address , Send an email before build start"
+       echo "	-NR   Run build without a refresh"
+       echo "   -NP   Run build without a tasks promote"
+       echo "        e.g. : ccRunBuild.ksh -n lel -v 750 -vrt 64OG -mode proj -sm eyalar@amdocs.com\n"
+       exit
+

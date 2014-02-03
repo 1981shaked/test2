@@ -1,0 +1,5 @@
+#1)Source_app:2)Target_app:3)File_name:4)Src_location:5)Target_XC_usr:6)Target_XC_PW:7)Broker_name:8)Target_view_path:9)PBA_flag:10)mail
+oms:abp:AmdocsCore.jar:cord9software/aif/lib:ccuser:unix33:indlin056/clr:/clrhome/clr/ccclr/mb_ccclr/bb/cord9impl/${CCPRODVERFORBB}/abp:1:ClaroCPCInfraCCM@int.amdocs.com
+oms:abp:omsconnectors-interfaces.jar:cord9connectors:ccuser:unix33:indlin056/clr:${HOME}/bb/cord9impl/${CCPRODVERFORBB}/abp:1:ClaroCPCInfraCCM@int.amdocs.com
+oms:abp:omsconnectors.jar:cord9connectors:ccuser:unix33:indlin056/clr:${HOME}/bb/cord9impl/${CCPRODVERFORBB}/abp:1:ClaroCPCInfraCCM@int.amdocs.com
+oms:abp:AmdocsProcMgrBase.jar:gord1core/lib:ccuser:unix33:indlin056/clr:${HOME}/bb/cord9impl/${CCPRODVERFORBB}/abp:1:ClaroCPCInfraCCM@int.amdocs.com

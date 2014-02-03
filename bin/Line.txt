@@ -1,0 +1,4 @@
+SearchCC \*infra\* | l -N   Display all files that located under infra
+SearchCC \* | l -N           Display all files in the repository
+
+find ./*/v112_0 -type f -name build.xml | xargs grep run.pmd

@@ -1,0 +1,34 @@
+#!/usr/local/bin/tcsh -f
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+
+if ($#argv != 1) then
+   echo "\nUsage : run_Promote_to_Completed < Version > "
+   echo "Example: run_Promote_to_Completed 600 \n"
+   exit (1)
+endif
+
+
+set VER = "$1"
+set VVER = v"$VER"
+set VVER1 = `echo $VVER | cut -c1-3`
+set VVER2 = `echo $VVER | cut -c4-4`
+set VVE_R = `echo $VVER1"_"$VVER2`
+if ( ! -d $HOME/"$VVER" ) then
+	echo "\nVersion $VVER doesn't exist under CC home directory\n"
+	echo "Usage : run_Promote_to_Completed < Version > "
+	echo "Example: run_Promote_to_Completed 600 \n"
+	exit (1)
+endif
+
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+
+#Promote tasks to 'Build Review' state
+harpromote -B $BROKERNAME -H "Tasks $1" -ST "Build Approval" -PN "Promote to Build Review" -A -M crm
+#Promote tasks to 'Completed' state
+#harpromote -B $BROKERNAME -H "Tasks $1" -ST "Build Review" -PN "Promote to Completed" -A
+

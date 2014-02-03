@@ -1,0 +1,10 @@
+#!/usr/local/bin/tcsh -f
+source $HOME/setEnv
+if ($#argv != 2) then
+	echo "Example: Run_CCMSSBuildStatus <version> <product>"
+	echo "Example: Run_CCMSSBuildStatus 750 lel"
+	exit (1)
+endif
+
+$HOME/CCMSS/bin/CCMSS_BuildStatus.pl -type PROD -v $1 -entity $2 -var $CCVARIANT
+$HOME/bin/Delete_CCMSSLogs $1 $2

@@ -1,0 +1,138 @@
+#!/usr/local/bin/tcsh -f
+# ---------------------------------------------------------------------------------------------------------------o
+# Name         : ccRefreshConfigFile
+# Purpose      : Refresh the configuration files from the Xtra-c to the Unix FS for product,modules and proj level.           
+# Usage        : ccRefreshConfigFile <Product Version> <Product Name>  e.g. refrsh_config_file 902 ACS prod
+# Assumptions  : Files been ccpt to the XC (Preferable with out hardcoded)
+# Dependencies : show_str.pl
+# Author       : Dror Baruch
+# Date         : 02/11/2008 
+# Review By    :
+# ----------------------------------------------------------------------------------------------------------------o
+
+#=======
+# Usage
+#=======
+if ($#argv != 3)then
+     echo "Usage : $0:t  <Product Version> <Product Name> <mode> "
+      echo "e.g. : $0:t 806 ACS prod (For product/config area) "
+      echo "e.g. : $0:t 806 ACS proj (For proj area)"
+      echo "e.g. : $0:t 806 ACS mod (For module/config are)"
+      echo "e.g. : $0:t 806 ACS a (For all above area)"
+	 exit(1)
+	 endif
+
+#### Check the mode Parameter 
+if ($3 != "prod" && $3 != "proj"  && $3 != "mod"  && $3 != "a" )then
+echo 3rd parameter is not valid , you type $3
+echo "Usage : refresh_config_file_new  <Product Version> <Product Name> <mode>"
+echo "e.g. : $0:t 806 ACS prod"
+exit
+endif
+
+#Checking if the product/version exist
+if ( ! -d  $HOME/product/${2}/v${1} ) then
+echo $HOME/product/${2}/v${1} does not exist , please check the version/product name that you have type ....
+exit
+endif
+
+
+
+
+####Set param
+set comp = `cat $HOME/product/$2/v${1}/config/product_profile | grep CompNames | awk -F= '{print $2}'`
+set modules = `show_str.pl -P  $2 -v v${1} | awk -F: '{print $2}'|uniq`
+set projects = ` show_str.pl -P $2 -v v${1} | awk -F: '{print $4}' | uniq | awk -FV '{print $1}'`
+set ts=`timestamp`
+set ref_log = /tmp/refresh_config_file.$ts
+touch $ref_log
+
+set isProd=N
+set isMod=N
+set isProj=N
+
+
+#####switch case for mode Parameter
+
+switch ("$3")
+
+case "prod":
+set isProd=Y
+breaksw
+
+
+case "mod":
+set isMod=Y
+breaksw
+
+
+case "proj":
+set isProj=Y
+breaksw
+
+case "a"
+set isProd=Y
+set isProj=Y
+set isMod=Y
+breaksw
+
+
+endsw
+#=============Refrsh the product=====================================
+
+if ( $isProd == "Y" ) then
+echo Start refrsh the product
+echo Start refrsh the product>>$ref_log
+
+hco "*" -br -r -b $BROKERNAME -en "Infra" -st "Infra" -vp "\product\${CCPRODUCT}\v${1}\config" -pn "Version Internal" -cp "$CCPROJECTHOME/product/${CCPRODUCT}/v${1}/config" -usr nikolets -pw unix23 -o /tmp/hco.product.$ts.log
+
+cat /tmp/hco.product.$ts.log
+cat /tmp/hco.product.$ts.log>>$ref_log
+
+endif
+
+#===========Refrsh the modules=========================================
+
+if ( $isMod == "Y" ) then
+echo Start refrsh the modules
+echo Start refrsh the modules>>$ref_log
+
+foreach mods( $modules )
+
+hco "*" -br -r -b $BROKERNAME -en "Infra" -st "Infra" -vp "\module\$mods\v${1}\config" -pn "Version Internal" -cp "$CCPROJECTHOME/module/$mods/v${1}/config" -usr nikolets -pw unix23 -o /tmp/hco.modules.$mods.$ts.log
+
+cat /tmp/hco.modules.$mods.$ts.log
+cat /tmp/hco.modules.$mods.$ts.log>>$ref_log
+
+end
+endif
+
+#==============Refrsh the proj area ========================================
+
+if ( $isProj == "Y" ) then
+
+echo Start refrsh the project area
+echo Start refrsh the project area>>$ref_log
+
+foreach proj ( $projects )
+hco "*" -br -r -b $BROKERNAME -en "Infra" -st "Infra" -vp "\proj\$proj" -pn "Version Internal" -cp "$CCPROJECTHOME/proj/$proj" -usr nikolets -pw unix23 -o /tmp/hco.proj.$proj.$ts.log
+cat /tmp/hco.proj.$proj.$ts.log
+cat /tmp/hco.proj.$proj.$ts.log>>$ref_log
+
+end
+endif
+
+
+
+
+
+echo "*******************************************************"
+echo "***"
+echo "***"
+echo "***"
+echo Please check the log $ref_log
+echo "***"
+echo "***"
+echo "***"
+echo "*******************************************************"
+

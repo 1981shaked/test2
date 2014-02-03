@@ -1,0 +1,41 @@
+TelUS
+1.	ccHFInstall.pl -pd lel -ver 7.5.1.20 -hf 32:52 -currsdkdir /sdkhome/sdk/ABP7.5_64OG/SP1PB20HF31 -		var 64OG –email tzvig@amdocs.com
+2. 	check if need to install Remote API:if there are no files in this path then no need to install 	remote API.
+	/APS/delivery/v750/SP2/Itanium/PatchBundle/PB1/HotFix/7.5.2.1.102/REMOTEAPI/DBG
+
+3. deleting Uninsatll files:
+	ilhp119!mb_cctuc:/sdkhome/sdk [16]> find . -type d -name "Uninstaller" | xargs du -sk
+	ilhp119!mb_cctuc:/sdkhome/sdk [16]> find . -type d -name "Uninstaller" | xargs rm -rf
+	
+
+
+TSA:
+ccHFInstall.pl -pd lel -ver 7.5.1.18 -hf 125:147 -currsdkdir /sdkhome/sdk/ABP7.5/SP1PB18HF124 -var 64OG –email tzvig@amdocs.com
+
+
+
+hpx616!mb_cclel:/tmp [154]> 
+tar -cvf /tmp/data.tar  ~/data/cc_local.dat.v1121 ~/data/cc_local.dat
+ ~/product/lel/v1106/config/* ~/product/lel/v1106/config/.* 
+ 
+ ~/module/*/v1106/config/module.config
+ 
+  tar -cvf /tmp/configFilesProjMake.tar `find ./*1106* -type f -name make.def`
+  
+  cclel:/tmp [154]> tar -cvf /tmp/configFilesProj.tar `find ./*1106* -type f -name .project.setup`
+  
+  
+  
+  
+   112> 8:23    dircmp config ~/tmp
+   113> 8:23    dircmp config ~/tmp/config | m
+   114> 8:25    dircmp config ~/tmp/config | grep dif
+   
+
+
+
+tar -cvf ~/tmp/project.setup.[ver].tar`find ./*[ver]* -type f -name .project.setup`   //from cdp
+tar -cvf ~/tmp/make.def[ver].tar `find ./*1106* -type f -name make.def`  						  //from cdp 	
+tar -cvf ~/tmp/data[ver].tar  ~/data/cc_local.dat.v1121 ~/data/cc_local.dat           //from dat      
+tar -cvf ~/tmp/config[ver].tar  ~/product/lel/v[ver]/config/* ~/product/lel/v[ver]/config/.* 
+tar -cvf ~/tmp/module_configFiles.[ver].tar `find ~/module/*/v[ver]/config/module.config` 

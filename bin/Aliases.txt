@@ -1,0 +1,19 @@
+alias sdkver "grep productVersion ${SDKHOME}/${SDKRELEASE}/../../.AmdocsPackager
+/Resources/PatchHistory.xml | tail -1 | cut -d= -f4 | cut -d' ' -f1"
+alias set_oms_d "do_sp c9ord800V64OG cord9deploy"
+alias set_oms_u "do_sp c9ord800V64OG cord9utilities"
+alias cdlogp "cd log.product/log.${CCPROD}/log.${CCPRODVER}"
+alias ggrr "grep -i -e ' error ' -e ' errors ' -e 'rror ' -e 'ERROR: ' -e 'Uns
+atisfied ' -e 'No rule ' -e 'Cannot' -e 'rror:' -e 'Could not find ' -e 'usy ' -
+e 'missing separator.  Stop' -e 'Command not found' -e 't find file' -e 'core du
+mped ' -e ' t find file' -e 'Cannot' -e 'No such file or directory' -e ' java.la
+ng.RuntimeException' -e 'ended with failure' -e 'not found' -e 'unexpected' -e '
+ ' -e 'FAILED' "
+alias SP "source $HOME/bin/SP"
+alias do_sp_crm "do_sp c9crm800V64OG ccrm9Integration"
+alias do_sp_oms "do_sp c9ord800V64OG cord9utilities"
+alias do_sp_amss "do_sp c3ecrbe800V64OG cbe3_deploy"
+alias do_sp_lel "do_sp c9cm800V64OG ccm9e"
+alias do_sp_mig "do_sp c9mig800 cmig9tool"
+alias il "rlogin ilibm011 -l mb_ccjst"
+alias SP "source $HOME/bin/SP"

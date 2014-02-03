@@ -1,0 +1,15 @@
+#!/usr/local/bin/tcsh 
+source $HOME/setEnv
+if ($#argv != 2) then
+	echo "Example: Delete_CCMSSLogs <version> <product>"
+	echo "Example: Delete_CCMSSLogs 750 lel"
+	exit (1)
+endif
+
+
+echo "Deleting files "HOME/CCMSS/${2}/v${1}/${CCVARIANT}/UMB/UMB_\*""
+rm -f `find ${HOME}/CCMSS/${2}/v${1}/${CCVARIANT}/UMB/. -type f -mtime +3 | grep -v .xml`
+echo "Deleting files from under "HOME/hco\*""
+rm -f `find ${HOME}/. -type f -name "hco_*.log" -mtime +3` 
+echo "Deleting files from under "HOME/hpp\*""
+rm -f `find ${HOME}/. -type f -name "hpp_*.log" -mtime +3` 

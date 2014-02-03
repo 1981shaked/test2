@@ -1,0 +1,17 @@
+set mail_dir="~/bin/mail"
+set mail_file="~/bin/mail/mail_${ts}"
+mkdir -p $mail_dir
+#set mail_list = ( drorbr@amdocs.com,TELUSSDSEOMSdevelopmentDVC@int.amdocs.com)
+set mail_list = ( drorbr@amdocs.com)
+#Send start build mail
+rm -f $mail_file
+touch $mail_file
+echo "Hi all," >> $mail_file
+echo "Claro $CCPRODTYPE v${2} build ${build_number} started on $HOST"  >> $mail_file
+echo  "  " >> $mail_file
+echo "Last Tasks List are :" >> $mail_file
+cat `ls -lrt ~/CCMSS/oms/v800/64OG/UMB/*tasks_details.txt* | tail -1 | awk '{print $9}'` >> $mail_file
+echo  "  " >> $mail_file
+echo "Thanks," >> $mail_file
+echo "Claro CC Team" >> $mail_file
+cat $mail_file | mailx -r "Claro CC" -s "Claro $CCPRODTYPE v$1 build  #${build_number}  started " $mail_list

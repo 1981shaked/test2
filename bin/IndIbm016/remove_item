@@ -1,0 +1,1050 @@
+#!/opt/CA/xtracPerl/bin/perl
+####################################################################
+#
+# Name    : remove_item
+# Purpose : Removal of files from the command line
+
+# Usage   : remove_item (filename(s)|-a ) {-pw  password  -p \"packageName\"}[-h]     
+#	    
+# Example : remove_item -pw ***** -p "TS - PR001 - CC - Dup Sym" "dcs*" 
+# Author  : Hila Sharabi (from checkout)
+# Date    : 30/1/2002
+# Updated : Malka Sulimani (2/3/2003)
+# 
+####################################################################
+
+BEGIN {
+        if ($ENV{ARCH} eq 'WNT'){
+                push (@INC,"$ENV{HARVESTHOME}");
+                push (@INC,"$ENV{'HARVESTHOME'}\\Common");
+        }else {
+                push (@INC,"$ENV{HARVESTSERVERDIR}/bin");
+                push (@INC, "$ENV{'HARCCHOME'}/bin");
+        }
+}
+
+
+require "UDPsubs";
+
+use Getopt::Long;
+use Common::Crypt;
+use Common::DBAccess;
+use DBI;
+use Cwd;
+use Fcntl ':mode';
+
+my ($rh_Aliases)={};
+
+$TWO_TASK = $ENV{HAR_TWO_TASK};
+if (!defined($TWO_TASK))
+{
+	printf "Environment variable HAR_TWO_TASK doesn't exist!\n";
+	exit(-1);	
+}
+
+
+my ($EnvironmentName,$state,$processCheckOut,@approvedStates,$statesList);
+my ($broker,$packageName,$browse,$update,$passwd,$filename,$help,$OS,$user);
+my ($repositoryPath,$clientPath,$mode);
+my ($BBName,$BranchName);
+my ($DBH, $HARVESTUSER, $HARVESTPASS, $tmpdir);
+my $rh_fileHash={};
+my $rh_packageHash={};
+my $rh_fileByVersion={};
+my @directory;
+my @packages;
+my $ERROR_LOG;
+my $FILE_LOG;
+my $filesWithoutPackage;
+
+	GetOptions(
+           'usr=s'      => \$user,
+	   'pw=s'  	=> \$passwd,
+	   'p=s'	=>\$packageName,
+	   'a:i'	=>\$allFiles,
+	   'h:i'    	=> \$help
+	  );
+	  
+   	$filename="@ARGV";
+	
+	if (defined ($help)){
+		&usage();
+		$DBH->disconnect;
+		exit 1;	
+	}
+	
+	$broker = $ENV{BROKERNAME};
+	if (!defined($broker))
+	{
+         	while ($broker eq ""){
+              	 	printf "\nPlease write your Harvest broker: ";
+              		$broker=<STDIN>;
+             		chomp($broker);
+      		}
+
+	}	
+	
+	@temp=split(/\//,$broker);
+
+        my ($DBH, $tmpdir);
+
+        &getDBUserPassword(\$HARVESTUSER , \$HARVESTPASS);
+        $DBH = &dbConnect($HARVESTUSER , $HARVESTPASS, 'checkout');
+        $tmpdir = &get_tmp_path($DBH);
+#       printf "HARVESTUSER=$HARVESTUSER :: HARVESTPASS= $HARVESTPASS:: TWO_TASK=$TWO_TASK\n";
+        
+        &get_harvest_usr($DBH,\$harUser,\$harPassword);
+
+	$OS = $ENV{OS};
+	
+	if (!(defined($user))) {
+		if ($OS eq "Windows_NT")
+		{
+			$user=$ENV{USERNAME};
+		
+			$directoryPath="c:\\temp\\log.harvest";
+			
+			$mode = (stat($directoryPath))[2];
+			if (!S_ISDIR($mode))
+			{
+				system("mkdir $directoryPath");	
+			}
+	
+		}else
+		{
+			$user=$ENV{USER};
+			system("mkdir -p -m 777 /tmp/log.harvest");
+		}
+	
+	}	
+	$logFile=$user."_RemoveItem_";	
+	$logFile.=&time_stamp;
+	
+	if ($OS eq "Windows_NT")
+	{
+		$theFile="c:\\temp\\log.harvest\\".$logFile;
+		
+	}else
+	{
+		$theFile="/tmp/log.harvest/".$logFile;
+	}
+
+	
+	#printf "\nGenerating log file $theFile ....";
+	open(LOGFILE,"> $theFile");
+	#printf "done!\n";
+
+	if (&get_aliases()==-1)
+	{
+		printf $ERROR_LOG;
+		$DBH->disconnect;
+		exit(8);	
+	}
+	
+	if (&getUserInformation()==-1)
+	{
+		print LOGFILE "\n\n$ERROR_LOG\n";
+		printf $ERROR_LOG;
+		$DBH->disconnect;
+		exit(9);			
+	}
+
+	if (&getHarvestDetails()==-1)
+	{
+		print LOGFILE "\n\n$ERROR_LOG\n";
+		printf $ERROR_LOG;
+		$DBH->disconnect;
+		exit(7);	
+	}
+	
+		
+	if (&checkOptions()==-1)
+	{
+		print LOGFILE "\n\n$ERROR_LOG\n";
+		printf $ERROR_LOG;
+		$DBH->disconnect;
+		exit(5);			
+	}
+
+	if (&checkPackageLocation()==-1)
+	{
+		print LOGFILE "\n\n$ERROR_LOG\n";
+		printf $ERROR_LOG;
+		$DBH->disconnect;
+		exit(4);		
+	}
+
+	@packageKeys=keys(%{$rh_packageHash});
+	
+	if (@packageKeys>0)
+	{
+		while ($passwd eq ""){
+			printf "\nPlease write the password for Username '$user': ";
+			
+			if ($OS ne "Windows_NT")
+			{
+				system "stty -echo";
+			}
+			
+			chop($passwd = <STDIN>);
+			print "\n";
+			if ($OS ne "Windows_NT")
+			{
+				system "stty echo";
+			}
+		}
+	}
+	
+	foreach $packageOfFile (@packageKeys)
+	{
+		printf "\nThe followed files will be related to the package \'$packageOfFile\' :\n";
+	 	printf "$rh_packageHash->{$packageOfFile}\n";
+	 	
+		if(&removeItem($rh_packageHash->{$packageOfFile},$packageOfFile,$version)==-1)
+		{
+			print LOGFILE "\n\n$ERROR_LOG\n";
+			printf $ERROR_LOG;
+
+		}
+	}
+	
+	
+#	print all the unremoved files
+	
+	foreach $key (keys(%{$rh_fileHash}))
+	{
+		if (	($rh_fileHash->{$key}->{'VERSION'} eq "")||
+			($rh_fileHash->{$key}->{'TAG'} ne "N")||
+			($rh_fileHash->{$key}->{'LOG'} ne ""))
+			{
+				print LOGFILE "$rh_fileHash->{$key}->{'LOG'}\n";
+				printf "$rh_fileHash->{$key}->{'LOG'}\n";	
+			}	
+	}
+
+
+# disconnect from the database
+	$DBH->disconnect;
+	exit(0);
+
+
+
+###################
+# Subroutines
+###################
+
+
+########################################################################################
+# Name : trim
+# Purpose : Remove the leading or trailing whitespace from a string
+# Return  : The string after the removing of the leading or trailing whitespace
+# Input   : The string from him we want to remove the leading or trailing whitespace
+########################################################################################
+
+sub trim {
+    my @out = @_;
+    for (@out) 
+    {
+        s/^\s+//;
+        s/\s+$//;
+    }
+    return wantarray ? @out : $out[0];
+} # end of &trim
+
+
+################################################################################################
+# Name : get_aliases
+# Purpose : Get all the aliases from table: AMDHARALIASES and put them in a Hash ($rh_Aliases)
+################################################################################################
+
+sub get_aliases {
+	
+	my $SelectAliases;
+	my @result;
+	my $selectLine=qq{select ALIASNAME , ALIASVALUE
+			from AMDHARALIASES 
+			};
+	
+	# prepare query to get the state where we have to do the create package
+	
+	if (!($SelectAliases = $DBH->prepare($selectLine)))
+	{
+		$ERROR_LOG ="\n$DBI::errstr.\n";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}	
+	
+	# execute query
+	if(!defined $SelectAliases->execute ){ 
+		$ERROR_LOG= "\n$DBI::errstr.\n ";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}
+	
+
+	while (@result = $SelectAliases->fetchrow_array)
+	{
+		
+		$rh_Aliases->{$result[0]}=$result[1];
+	}
+	
+	if (($rh_Aliases->{"PROCESS_VIEWVERSION"} eq "")||
+	($rh_Aliases->{"STATE_DEVELOPMENT"} eq "")||
+	($rh_Aliases->{"STATE_INFRA"} eq "")||
+	($rh_Aliases->{"VALIDATE_APPROVEDSTATES"} eq ""))
+	{
+		$SelectAliases->finish();
+		$ERROR_LOG= "There is a problem with getting all the aliases from table: AMDHARALIASES.\n";
+		$ERROR_LOG.= "Unable to get the following aliases:\nSTATE_DEVELOPMENT\nSTATE_INFRA\nPROCESS_VIEWVERSION\nVALIDATE_APPROVEDSTATES\n";
+		return -1;		
+	} 
+
+
+	$SelectAliases->finish();
+	#$state=$rh_Aliases->{"STATE_DEVELOPMENT"};
+	$processCheckOut=$rh_Aliases->{"PROCESS_VIEWVERSION"};
+	
+	#@approvedStates=split(/,/,$rh_Aliases->{"VALIDATE_APPROVEDSTATES"});
+	
+	#$statesList=$rh_Aliases->{"VALIDATE_APPROVEDSTATES"};
+	return 1;
+} # end of &get_aliases
+
+
+
+sub getUserInformation
+{
+
+	$clientPath=&getcwd;
+	
+	
+	$repositoryPath=$clientPath;
+	$repositoryPath=~/\/bb\//;
+	$repositoryPath=$';
+	if ($repositoryPath eq "")
+	{
+		$ERROR_LOG= "Your location must be under <BB name>/< Building Block Version> ,\n"; 
+        	$ERROR_LOG.=" or deeper in this directory tree.\n";	
+        	return -1;
+	}
+
+	@directory=split(/\//,$repositoryPath);
+	if ($directory[1] eq "")
+	{
+		$ERROR_LOG= "Your location must be under $directory[0]/< Building Block Version > ,\n"; 
+	       	$ERROR_LOG.= " or deeper in this directory tree.\n";	
+	       	return -1;			
+	}
+
+	if ($OS eq "Windows_NT")
+	{
+		$clientPath=~s/\//\\/g;
+	}
+
+	
+	$BBName=$directory[0];
+	$BranchName=$directory[1];
+	
+	$i=0;
+	$infraRepositoryPath="";
+	$regRepositoryPath="";
+	
+	foreach $folder (@directory)
+	{
+		$infraRepositoryPath.="\\".$folder;	
+		if ($i!=1)
+		{
+			$regRepositoryPath.="\\".$folder;		
+		}
+		$i++;
+	}
+#	printf "repositoryPath====> $repositoryPath \n";	
+	
+	return 1;
+	
+}# sub getUserInformation
+
+################################################################################################
+# Name 		: removeItem
+# Purpose 	: Remove all the files within a certain Project/BB/Topic
+################################################################################################
+
+sub removeItem
+{
+
+	my $hri_command = "";
+	my ($fileList,$packageName,$ver)=@_;
+#	printf "fileList=$fileList\npackageName=$packageName\n";
+	
+	$temp=&time_stamp;
+	my $out_file;
+	
+	if ($OS eq "Windows_NT")
+	{
+		$out_file="c:\\temp\\".$user."_removeItem_".$temp;
+	}else
+	{
+		$out_file="/tmp/".$user."_removeItem_".$temp;
+	}
+	
+
+	
+	$hri_command="hri $fileList -b $broker -usr $user -pw $passwd -en \"$EnvironmentName\" ";
+	$hri_command.=" -st \"$state\" -vp \"$repositoryPath\" -p \"$packageName\" "; 
+	$hri_command.=" -o \"$out_file\" > .out";
+	
+
+	$forPrint=$hri_command;
+	$forPrint=~s/$passwd/**********/;
+	print LOGFILE "\n\n$forPrint\n";
+
+	$value=system($hri_command);
+
+	open(REMOVEITEM,"$out_file") || die "Failed to open file $out_file\n";
+	@logs = <REMOVEITEM>; 
+	close(REMOVEITEM);
+	
+	if ($value!=0)
+	{
+		$ERROR_LOG="\nERROR: There is a problem to remove the wanted file(s).\n@logs\n";
+		unlink($out_file);
+		system("rm -f .out");
+		return -1;
+	}
+
+	printf "\n@logs\n";
+	unlink($out_file);
+	system("rm -f .out");
+	return 1;
+
+}
+
+
+################################################################################################
+# Name 		: checkOptions
+# Purpose 	: Check out all the parameters.If the user forgot to use one of the parameters 
+#		  it asks the user to enter them.
+################################################################################################
+
+sub checkOptions
+{
+	
+	
+	my ($result);
+	
+		
+	if ((defined($allFiles))&&($filename ne ""))
+	{
+		printf "\nWarning: You should use -a to remove all files, or use the specified names of files ($filename)\n";
+		
+				
+		$result="";
+		while (($result!~/^[Aa]/)&&($result!~/^[Ss]/))
+		{
+			printf "Choose [S]pecified or [A]ll :";
+			$result=<STDIN>;
+			chomp($result);
+		}
+		
+		if ($result=~/^[Aa]/)
+		{
+			$filename="%";
+		}	
+	}
+	
+	if ((defined($allFiles))&&($filename eq ""))
+	{
+		$filename="*";
+	}
+	
+	
+	while ($filename eq ""){
+		printf "\nPlease write the file(s) you wish to remove ";
+				$filename=<STDIN>;
+		chomp($filename);
+	}	
+	
+	if (&checkFileNames()==-1)
+	{
+		return -1;	
+	}
+
+	
+
+#	printf "\nDear $user,\n";
+#	printf "The broker name chosen is: $broker\n";
+#	printf "The password is: $passwd\n";
+#	printf "You asked to checkout $filename ";
+#	if ($browse==1)
+#	{
+#		printf "for browse.\n\n";	
+#	}elsif($update==1)
+#	{
+#		printf "for update and relate it to package: '$packageName'.\n\n";	
+#	}
+	
+	return;
+	
+}	
+sub checkFileNames
+{
+	my $SelectFiles;
+	my $itemName="";
+	my @result;
+	my $first=0;
+	my $selectLine;
+	$filename=~s/\*/\%/g;
+
+	@fileList=split(/\s/,$filename);
+
+	foreach $file (@fileList)
+	{
+		if ($first==0)
+		{
+			if ($file=~/(.*)\%(.*)/)
+			{
+				$itemName.="hi.ITEMNAME like \'$file\' ";
+			}else
+			{
+				$itemName.="hi.ITEMNAME = \'$file\' ";
+			}
+			
+			
+			$first++;
+		}else
+		{
+			if ($file=~/(.*)\%(.*)/)
+			{
+				$itemName.="or hi.ITEMNAME like \'$file\' ";
+			}else 
+			{
+				$itemName.="or hi.ITEMNAME = \'$file\' ";
+			}
+			
+			
+		
+		}
+	}
+
+
+		$selectLine=qq{select hiM.ITEMNAME,hvM.MAPPEDVERSION,hvM.VERSIONSTATUS,hu.USERNAME 
+	                        from haritems hiM,harversions hvM,haruser hu 
+	                        where hu.USROBJID(+)=hvM.MODIFIERID 
+	                        and hiM.ITEMOBJID=hvM.ITEMOBJID 
+	                        and hvM.ITEMOBJID not in (
+					select hr.REFITEMID
+					from HARITEMRELATIONSHIP hr
+					where hr.RELATIONSHIP='rename'
+					)
+	                        and (hvM.ITEMOBJID,hvM.VERSIONOBJID)in ( 
+				select hv.ITEMOBJID,MAX(hv.VERSIONOBJID) 
+	                        from haritems hi,harversions hv,harpathfullname hpf,harenvironment he,harstate hs,HARVERSIONINVIEW hvv,harview HView 
+	                        where hpf.PATHFULLNAME=\'$repositoryPath\' 
+	                        and hi.ITEMOBJID=hv.ITEMOBJID 
+	                        and hi.itemtype=1 
+	                        and hpf.ITEMOBJID=hi.PARENTOBJID 
+				and he.ENVIRONMENTNAME='$EnvironmentName' 
+				and hs.STATENAME=\'$state\' 
+				and he.ENVOBJID=hs.ENVOBJID 
+				and hs.VIEWOBJID=HView.VIEWOBJID 
+				AND (HView.viewobjid = HVV.viewobjid OR HView.baselineviewid = HVV.viewobjid)  
+				and hvv.VERSIONOBJID=hv.VERSIONOBJID 
+	                        and ($itemName)
+	                        GROUP BY hv.ITEMOBJID) 
+				};				
+	
+
+	print LOGFILE "selectLine:\n$selectLine\n";
+	
+	if (!($SelectFiles = $DBH->prepare($selectLine)))
+	{
+		$ERROR_LOG ="\n$DBI::errstr.\n";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}	
+	
+	if(!defined $SelectFiles->execute ){ 
+		$ERROR_LOG= "\n$DBI::errstr.\n ";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}
+
+
+	while (@result = $SelectFiles->fetchrow_array)
+	{
+		$result[1]=&trim($result[1]);
+		$rh_fileHash->{$result[0]}->{'TAG'}=$result[2];
+		$rh_fileHash->{$result[0]}->{'VERSION'}=$result[1];
+		$rh_fileHash->{$result[0]}->{'USER'}=&trim($result[3]);	
+	}
+	
+
+	$SelectFiles->finish();
+	
+#	Check if there are items that where given as a parameter but doesn't exist in the harvest,
+#	Or they were renamed in the harvest.
+
+	foreach $file (@fileList)
+	{
+#		print "Current file: $file\n";
+		if (($file!~/(.*)\%(.*)/)&&(!defined($rh_fileHash->{$file})))
+		{
+			
+			$rh_fileHash->{$file}->{'LOG'}="Warning: File $file doesn't exist in harvest, or it was renamed!\n";
+			$rh_fileHash->{$file}->{'VERSION'}="";
+#			print "$rh_fileHash->{$file}->{'LOG'}\n";
+		}
+	}
+
+	$numFiles=0;
+
+	foreach $key (keys(%{$rh_fileHash}))
+	{
+		if (($rh_fileHash->{$key}->{'VERSION'} eq "")&&($version ne ""))
+		{
+			$rh_fileHash->{$key}->{'LOG'}="Warning: File $key doesn't have the wanted version: $version!";
+			
+		}elsif ($rh_fileHash->{$key}->{'TAG'} eq "N"){$numFiles++;}
+			else
+			{
+			    if (($browse==1)&&($rh_fileHash->{$key}->{'LOG'} eq ""))	{$numFiles++;}
+				
+			    if ($rh_fileHash->{$key}->{'TAG'} eq "R") 
+			    	{ $rh_fileHash->{$key}->{'LOG'}="\nWarning: The file \'$key\' can't be removed!\n";
+			    	  $rh_fileHash->{$key}->{'LOG'}.="The file is already Checked Out by the User: $rh_fileHash->{$key}->{'USER'}!";}
+			    elsif ($rh_fileHash->{$key}->{'TAG'} eq "D") 
+			    	 { $rh_fileHash->{$key}->{'LOG'}="\nWarning: The file \'$key\' can't be removed,";
+			    	  $rh_fileHash->{$key}->{'LOG'}.="The file was already removed.!";}
+			    elsif ($rh_fileHash->{$key}->{'TAG'} eq "M") 
+			    	 { $rh_fileHash->{$key}->{'LOG'}="\nWarning: The file \'$key\' can't be removed!\n";
+				   $rh_fileHash->{$key}->{'LOG'}.="The file is in Merged status, ";
+				   $rh_fileHash->{$key}->{'LOG'}.="use interactive merge before trying to check out.";}
+			}
+
+	}
+	
+	if ($numFiles==0)
+	{
+		$ERROR_LOG="\nWarning: There aren't any files to remove!\n";
+		foreach $key (keys(%{$rh_fileHash}))
+		{
+			$ERROR_LOG.=$rh_fileHash->{$key}->{'LOG'}."\n";
+		}	
+#		print "Now its me!!!\n$ERROR_LOG\n";
+		return -1;
+	}
+	return 1;
+}
+
+
+
+sub checkPackageLocation
+{
+	my $SelectPackage;
+	my $itemName;
+	my @result;
+	my $first=0;
+	my $selectLine=qq{select I.itemname,p.PACKAGENAME,hs.STATENAME,V.mappedversion,hu.USERNAME
+				FROM harpathfullname HPN, haritems I,harversions V,harpackage P,harstate HS,
+				harenvironment HE,haruser hu  
+				where HPN.pathfullname='$repositoryPath' 
+				AND I.parentobjid=HPN.itemobjid 
+				AND I.itemtype=1
+				AND I.itemobjid = V.itemobjid 
+				AND P.packageobjid = V.Packageobjid 
+				AND P.stateobjid = HS.stateobjid 
+				AND P.envobjid = HE.envobjid 
+				AND P.ASSIGNEEID=hu.USROBJID
+				AND HE.environmentname ='$EnvironmentName'
+			};	
+
+
+	foreach $file (keys(%{$rh_fileHash}))
+	{
+		if (($rh_fileHash->{$file}->{'VERSION'} ne "")&&
+		    ($rh_fileHash->{$file}->{'TAG'} eq "N")&&
+		    ($rh_fileHash->{$file}->{'LOG'} eq ""))
+		{
+			if ($first==0)
+			{
+				$itemName.="I.ITEMNAME like '$file' ";
+				$first++;
+			}else
+			{
+				$itemName.="or I.ITEMNAME like '$file' ";
+			
+			}
+		}
+	}
+	
+	$selectLine.="and ($itemName) ";
+
+	if ($version ne ""){$selectLine.=" AND V.MAPPEDVERSION='$version'";}
+#	printf "\ncheckPackageLocation\n$selectLine\n";
+
+	print LOGFILE "\n\nThe select of the packages: \n$selectLine\n\n";
+	if (!($SelectPackage = $DBH->prepare($selectLine)))
+	{
+		$ERROR_LOG ="\n$DBI::errstr.\n";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}	
+	
+	if(!defined $SelectPackage->execute ){ 
+		$ERROR_LOG= "\n$DBI::errstr.\n ";
+		$ERROR_LOG .=$selectLine;
+		return -1;
+	}
+
+
+	while (@result = $SelectPackage->fetchrow_array)
+	{
+		$result[3]=&trim($result[3]);
+
+#	printf "\nitem:$result[0].\nVERSION:$result[3].\npackage:$result[1].\nstate:$result[2].";
+		if ($rh_fileHash->{$result[0]}->{'VERSION'} eq $result[3])
+		{
+			$result[2]=&trim($result[2]);
+			$rh_fileHash->{$result[0]}->{'PACKAGE'}=$result[1];
+			$rh_fileHash->{$result[0]}->{'ASSIGNEE'}=&trim($result[4]);
+			$rh_fileHash->{$result[0]}->{'STATE'}=$result[2];		
+		}
+	}
+
+	$SelectPackage->finish();
+
+	$numFiles=0;
+
+	foreach $file (keys(%{$rh_fileHash}))
+	{
+		if (($rh_fileHash->{$file}->{'VERSION'} eq "")||
+		    ($rh_fileHash->{$file}->{'TAG'} ne "N")||
+		    ($rh_fileHash->{$file}->{'LOG'} ne "")){next;}
+		 
+#		Check all the files who doesn't have any packages related! 
+#		Add the files to the variable $filesWithoutPackage.
+#		This variable is a list of files that doesn't have any packages related.
+	
+		if (($packageOfFile=$rh_fileHash->{$file}->{'PACKAGE'}) eq "")
+		{
+			$filesWithoutPackage.="$file ";
+			next;	
+		}
+		
+#		If the state of the package is the correct state,
+#		Add to the hash of packages list of files that needs to be checked out.
+
+		if ($rh_fileHash->{$file}->{'STATE'} eq $state)
+		{
+			if ($rh_fileHash->{$file}->{'ASSIGNEE'} eq $user)
+			{
+				$rh_packageHash->{$packageOfFile}.="$file ";
+			}else
+			{
+				$rh_fileHash->{$file}->{'LOG'}="Warning: The file \'$file\' can't be checked out!\n";
+				$rh_fileHash->{$file}->{'LOG'}.="The package \'$rh_fileHash->{$file}->{'PACKAGE'}\' is located in state: ";
+				$rh_fileHash->{$file}->{'LOG'}.="\'$rh_fileHash->{$file}->{'STATE'}\' and assigned to '$rh_fileHash->{$file}->{'ASSIGNEE'}' instead of '$user'.\n";		
+			}
+			
+			
+			next;	
+		}
+
+#		$p="Approved states".@approvedStates;
+#		printf "$p\n";
+		$found=0;
+		for($i=0;($i<@approvedStates)&&($found==0);$i++)
+		{
+#			printf "Approved States: $approvedStates[$i].\n";
+
+			if ($approvedStates[$i] eq $rh_fileHash->{$file}->{'STATE'})
+			{	
+				$found++;
+				$filesWithoutPackage.="$file ";
+				$rh_fileHash->{$file}->{'STATE'}="";
+				$rh_fileHash->{$file}->{'PACKAGE'}="";
+			}
+		}
+	
+		if ($found==0)
+		{
+			$rh_fileHash->{$file}->{'LOG'}="Warning: The file \'$file\' can't be checked out!\n";
+			$rh_fileHash->{$file}->{'LOG'}.="The package \'$rh_fileHash->{$file}->{'PACKAGE'}\' is located in state: ";
+			$rh_fileHash->{$file}->{'LOG'}.="\'$rh_fileHash->{$file}->{'STATE'}\' instead of the following states: $statesList.\n";	
+		}
+	}
+	
+	
+
+#	 printf "List of Files:\n";
+#	 foreach $file (keys(%{$rh_fileHash}))
+#	 {
+#	 	printf "\n\nFile name: $file\n";	
+#	 	printf "Tag: $rh_fileHash->{$file}->{'TAG'}.\n";	
+#	 	printf "Version: $rh_fileHash->{$file}->{'VERSION'}.\n";
+#	 	printf "User: $rh_fileHash->{$file}->{'USER'}.\n";
+#	 	printf "Log: $rh_fileHash->{$file}->{'LOG'}.\n";
+#	 	printf "Package: $rh_fileHash->{$file}->{'PACKAGE'}.\n";
+#	 	printf "STATE: $rh_fileHash->{$file}->{'STATE'}.\n";
+#	 	
+#	 }
+	 
+	 
+#	 printf "\nList of Packages:\n";
+#	 foreach $file (keys(%{$rh_packageHash}))
+#	 {
+#	 	printf "\nPackage: $file.\n";
+#	 	printf "List of files: $rh_packageHash->{$file}.\n";
+#	 	
+#	 }
+
+	
+	if ($filesWithoutPackage ne "")
+	{
+		if (&getListOfPackagesToCheckOut()==-1)	{return -1;}
+		if (($packageName ne "")&&(&checkIfPackageExist()==1))
+		{
+			$rh_packageHash->{$packageName}.="$filesWithoutPackage ";
+			return 1;
+		}
+		
+		if (@packages==1)
+		{
+			printf "The package name the files will be related to is ---> $packages[0]\n";
+			$packageName=$packages[0];
+			$rh_packageHash->{$packageName}.="$filesWithoutPackage ";
+			return 1;
+		}
+		
+		
+		printf "\n\nThe followed files needs a package to be related to:\n".$filesWithoutPackage."\n";
+
+		while ($packageName eq ""){
+			$i=0;
+			printf "\nHere is a list of ".@packages." packages you can use:";
+			printf "\n#######################################\n\n";
+			
+			foreach $one (@packages) 
+			{
+				printf "$i. $one\n";
+				$i++;
+			}
+			
+			printf "\nPlease write the number of package that you want:";
+			$i=<STDIN>;
+			chomp($i);
+			$max=@packages;
+#			print "max: $max.\n";
+
+			if (($i=~/^(\d+)$/)&&($i>-1)&&($i<$max))
+			{
+				
+				printf "The chosen package is number $i ---> $packages[$i]\n";
+				$packageName=$packages[$i];
+				$rh_packageHash->{$packageName}.="$filesWithoutPackage ";
+#				printf "package:$packageName files:$rh_packageHash->{$packageName}\n";
+
+				return 1;		
+			}
+			
+			
+			printf "\nError: You should put a number between 0..".($max-1)."\n";
+		}
+#		$rh_packageHash->{$packageName}.="$filesWithoutPackage ";
+	}
+
+	return 1;
+
+}
+
+sub getListOfPackagesToCheckOut
+{
+	my $SelectPackages;
+	my @result;
+	my $packagesQuery=qq{select hp.PACKAGENAME
+				from harpackage hp,haruser hu,harstate hs,harenvironment he
+				where hu.USERNAME=\'$user\'
+				and hs.STATENAME=\'$state\'			
+				and he.ENVIRONMENTNAME=\'$EnvironmentName\'
+				and hp.ASSIGNEEID=hu.USROBJID
+				and hp.STATEOBJID=hs.STATEOBJID
+				and he.ENVOBJID=hs.ENVOBJID
+			};
+			
+	
+	if (!($SelectPackages = $DBH->prepare($packagesQuery)))
+	{
+		$ERROR_LOG ="\n$DBI::errstr.\n";
+		$ERROR_LOG .=$packagesQuery;
+		return -1;
+	}	
+	
+	
+	# execute query
+	if(!defined $SelectPackages->execute )
+	{ 
+		
+		$ERROR_LOG =$packagesQuery;
+		$ERROR_LOG .="\n$DBI::errstr.\n";
+		return -1;
+	}	
+
+	# get the result
+	while (@result = $SelectPackages->fetchrow_array)
+	{
+		$result[0]=&trim($result[0]);
+		push(@packages,$result[0]);
+	}
+
+
+	if (@packages==0)
+	{
+		$ERROR_LOG ="\nThere aren't any packages in State: '$state' that assigned to: '$user'.\n";
+		return -1;
+	}
+	
+#	foreach $key (@packages)
+#	{
+#		printf "Package: $key\n";	
+#	}
+	
+	
+	$SelectPackages->finish();
+	
+	return 1;
+	
+	
+}
+
+
+sub getHarvestDetails
+{
+	my $SelectProjects;
+	my @result;
+
+        my $projectQuery=qq{select HE.ENVIRONMENTNAME,APT.PROJTYPENAME
+                                from AMDBB AB,AMDBBVERSION ABV, AMDPROJECT_BBVERS APB,
+                                AMDPROJECT AP,AMDPROJ_TYPE APT, HARENVIRONMENT HE
+                                where AB.BBNAME='$BBName'
+                                and AB.BBID=ABV.BBID
+                                and ABV.VERSIONNAME='$BranchName'
+                                and ABV.BBVERSIONID=APB.BBVERID
+                                and APB.PROJID=AP.PROJID
+                                and AP.TYPE=APT.PROJTYPEID
+                                and APB.ENVOBJID=HE.ENVOBJID
+                        };
+	
+	if (!($SelectProjects = $DBH->prepare($projectQuery)))
+	{
+		$ERROR_LOG ="\n$DBI::errstr.\n";
+		$ERROR_LOG .=$projectQuery;
+		return -1;
+	}	
+	
+	
+	# execute query
+	if(!defined $SelectProjects->execute )
+	{ 
+		
+		$ERROR_LOG =$projectQuery;
+		$ERROR_LOG .="\n$DBI::errstr.\n";
+		return -1;
+	}	
+
+	# get the result
+	if (@result = $SelectProjects->fetchrow_array)
+	{
+		$EnvironmentName=&trim($result[0]);
+		if ($EnvironmentName eq "Infra")
+		{
+			$state=$rh_Aliases->{"STATE_INFRA"};
+			$repositoryPath=$infraRepositoryPath;
+			$approvedStates[0]=$rh_Aliases->{"STATE_REFRESH_INFRA"};
+			$statesList=$rh_Aliases->{"STATE_REFRESH_INFRA"};
+			
+		}else
+		{
+			$state=$rh_Aliases->{"STATE_DEVELOPMENT"};
+			$repositoryPath=$regRepositoryPath;
+			@approvedStates=split(/,/,$rh_Aliases->{"VALIDATE_APPROVEDSTATES"});
+			$statesList=$rh_Aliases->{"VALIDATE_APPROVEDSTATES"};
+		}
+		
+		$SelectProjects->finish();
+		
+#		print "\nState: $state \nRepository: $repositoryPath \napproved: @approvedStates \nState list: $statesList\n";
+		return 1;		
+	}
+
+	$ERROR_LOG ="\nFailed to get the Harvest project name of Building Block:'$BBName' Branch Name:'$BranchName'.\n";
+#	$ERROR_LOG .=$projectQuery;
+	$ERROR_LOG .="\n$DBI::errstr\n";
+	$SelectProjects->finish();		
+	return -1;
+	
+}
+sub checkIfPackageExist
+{
+
+	foreach $one (@packages	)
+	{
+		if ($one eq $packageName){return 1;}
+	}
+	
+	printf "\nYou can't remove using the package '$packageName',";
+	printf "\nbecause you aren't assigned to that package \nOr the package doesn't exist in state: $state\n";	
+	
+	$packageName="";
+	return -1;
+}
+
+################################################################
+# Name    : time_stamp
+# Purpose : Return a string of the time
+# Return  : $stamp - a string in the format : YYMMDD_hhmmss
+# Input   : $time  - the output of time
+################################################################
+sub time_stamp  {
+    local($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
+        local($stamp);
+
+    ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+        localtime(time);
+        $stamp = sprintf("%02d%02d%02d_%02d%02d%02d",$year%100,++$mon,$mday,
+                         $hour,$min,$sec);
+        return $stamp;
+
+} # end of &time_stamp;
+
+
+
+####################################################################
+# Name    : usage
+# Purpose : Show checkout usage and die
+####################################################################
+sub usage {
+	my ($messege) = @_;
+	&Warn("$messege\n") if ($messege);
+
+die <<END
+
+Usage: remove_item (filename(s)|-a )  {-usr username -pw  password -p \"packageName\"}[-h] 
+\nremove_item: 
+------------
+\tremove_item (filename(s)|-a ) {-usr username -pw  password -p \"packageName\" } 
+
+Purpose :
+\tRemove one or more files.
+
+Options :
+\t-usr: User name of Harvest.
+\t-pw : Password of Harvest.
+\t-a  : Remove all files of the same version (branch name).
+\t-p  : Specifies the CCC/Harvest package name for files  
+\t      who have unrelated packages. 
+\n\t-h: This help.
+
+END
+} # end of &usage
+
+1;

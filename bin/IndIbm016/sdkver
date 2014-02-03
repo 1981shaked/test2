@@ -1,0 +1,25 @@
+#!/usr/local/bin/tcsh -f
+
+setenv suffix `echo $CCVER | cut -c2-3,5`
+
+set All = $1
+if ( $All != "-a" && $All != "" || $All == "-h" ) then 
+	echo "\nUsage: `basename $0` < -h | -a >"
+	echo "\t-h usage"
+	echo "\t-a for all version\n"
+	exit
+endif 
+
+set type=`echo $SDKRELEASE | cut -c 1-3`
+set list_patches = $type$suffix
+if ( $All == "-a" ) set list_patches = ( `/usr/bin/ls /sdkhome/sdk/SDKRoot | grep $type` )
+
+echo ""
+foreach Ver ( $list_patches )
+	if ( -f /sdkhome/sdk/SDKRoot/$Ver/../../.AmdocsPackager/Resources/PatchHistory.xml ) then
+    		set sdkver = `grep productVersion /sdkhome/sdk/SDKRoot/$Ver/../../.AmdocsPackager/Resources/PatchHistory.xml | tail -1 | sed 's/^.*productVersion="//' | cut -d\" -f1`
+    		echo "$Ver => $sdkver"
+	endif
+end
+echo ""
+

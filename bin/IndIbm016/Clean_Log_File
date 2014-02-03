@@ -1,0 +1,72 @@
+###############################################################
+#!usr/local/bin/tcsh -f                                       #
+#                                                             #
+#File Name:Clean_Log_File                                     #
+#                                                             #
+#Purpose:Cleaning Log files of project by the date            #
+#                                                             #
+#Usage : Clean_Log_File <Proj_Name> <Number of days>          #
+#                                                             #
+#Date: 22/08/2001                                             #
+#                                                             #
+#Autor: David Aviv                                            #
+#                                                             #
+###############################################################
+
+if ($#argv != 3)then
+   echo "Usage : $0:t <Proj_Name> <Number of days Back> <Version Base Number>"
+   echo "e.g. : $0:t clfApp706V32 [+]8 802"
+   exit(1)
+endif
+
+cd ~/tmp
+if (! -d Clean_Log_Report) then
+	mkdir ~/tmp/Clean_Log_Report
+endif
+
+cd ~/tmp/Clean_Log_Report
+set Log_Clean_Name = Log_Clean_Report."$3".`timestamp`
+
+touch ~/tmp/Clean_Log_Report/$Log_Clean_Name
+
+echo "Following Clean report was runnig with the following parameters" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+echo "$0:t $1 $2 $3" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+echo "" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+
+cd ~/log.$1
+	pwd
+	pwd >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+	foreach log_file (`find . -mtime $2 -type f|grep -i -e ccimport.log -e CCSwitch -e ccrmzer -e crontab -e file_of_mains -e ccbuild -e ccrmint -e ccexport -e ITO`)
+		ll $log_file >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+		rm -f $log_file
+	end
+
+set bb_list = `cat ~/proj/$1/proj_profile |grep -iv -e BBname -e SubProject | awk '{print $1}'`
+	foreach bb ($bb_list)
+		#echo $bb
+		cd ~/log.$1/log.$bb
+		echo "" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+		pwd
+		pwd >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+		foreach log_file (`find . -mtime $2 -type f`)
+		ll $log_file >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+		rm -f $log_file
+		end
+	end
+
+cd ~/log.harvest
+	foreach dir_name (`find . -type d | grep $3`)
+		cd ~/log.harvest/$dir_name
+		echo "" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+		pwd
+		pwd >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+			foreach log_file (`find . -mtime $2 -type f`)
+			ll $log_file >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+			rm -f $log_file
+			end 
+	end
+
+echo "" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+echo "Clean Log process as finished successfully" >> ~/tmp/Clean_Log_Report/$Log_Clean_Name
+echo "Clean Log process as finished successfully"
+echo "You Can see the full delete list files at ~/tmp/Clean_Log_Report/$Log_Clean_Name " 

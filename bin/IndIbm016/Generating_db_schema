@@ -1,0 +1,34 @@
+#!/usr/bin/tcsh -f
+
+setenv GC_LANG "English_UnitedStates.Windows-1252@Default"
+
+set schema_file=db/schema/objectSchema.xml
+
+if ( -f  ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env.${CCPRODVERNUM} ) then
+	\cp -f ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env.${CCPRODVERNUM} ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env
+endif
+
+if ( -f  ${SDK_CRM_HOME}/CRM/application/Server/dbadmin_UNIX/clarify.env.${CCPRODVERNUM} ) then
+	\cp -f ${SDK_CRM_HOME}/CRM/application/Server/dbadmin_UNIX/clarify.env.${CCPRODVERNUM} ${SDK_CRM_HOME}/CRM/application/Server/dbadmin_UNIX/clarify.env
+endif
+
+set db_user=`grep -w login_name $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env | awk -F= '{print $2}'`
+set db_pass=`grep -w db_password $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env | awk -F= '{print $2}'`
+set db_inst=`grep -w db_server $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env | awk -F= '{print $2}'`
+set jdbc_db_server=`grep -w jdbc_db_server $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin_UNIX/clarify.env | awk -F= '{print $2}'`
+
+if ( -f $HOME/bb/ccrm3Configuration/$CCVER/db/schema/scripts/pre_schema_mgr.sql ) then
+                  sqlplus -s $db_user/$db_pass@$db_inst < $HOME/bb/ccrm3Configuration/$CCVER/db/schema/scripts/pre_schema_mgr.sql
+endif
+
+setenv CRM_HOME   $SDKHOME/$SDKRELEASE/modules/crm/CRM
+setenv CLARIFY_DIR       $CRM_HOME/application/Server/dbadmin_UNIX
+setenv CLASSPATH $CLARIFY_DIR/ClfySchemaMgr.jar
+setenv LIBPATH /usr/java5sr4/jre/bin/classic:/usr/java5/jre/bin:/oravl01/oracle/10.2.0.3/lib32:/oravl01/oracle/10.2.0.3/lib:/oravl01/oracle/10.2.0.3/bin:${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin:${SDK_CRM_HOME}/CRM/application/Server/dbadmin
+
+setenv PATH       "${PATH}:$CLARIFY_DIR"
+
+echo "$JAVA_HOME/bin/java -Xms1024M -Xmx1024M  -cp $CLASSPATH com.clarify.schemamgr.SchemaMgr -user_name $db_user -password $db_pass -db_server $jdbc_db_server -db_name $db_inst -replace $HOME/bb/ccrm3Configuration/$CCVER/$schema_file"
+
+$JAVA_HOME/bin/java -Xms1024M -Xmx1024M  -cp $CLASSPATH com.clarify.schemamgr.SchemaMgr -user_name $db_user -password $db_pass -db_server $jdbc_db_server -db_name $db_inst -replace $HOME/bb/ccrm3Configuration/$CCVER/$schema_file
+

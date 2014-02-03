@@ -1,0 +1,508 @@
+#!/usr/local/bin/perl
+#-d:ptkdb
+##############################################################################################################################
+#                                                                                                      
+# Name    : Ccjobs                                                                                    
+# Purpose : Prints out CC Jobs curently running
+#           The information of the jobs to be listed is taken from a input file which is customizable named "infile"
+#           Will print the current build running status.
+#           Will print the Users, Load, File System information. 
+# Usage   : Ccjobs [ -u user | -m machine -u user ] [-h]
+#                   Ccjobs    
+#                   Ccjobs [-u user]    
+#                   Ccjobs [-m machine -u user ]     
+#                                                                                                      
+##############################################################################################################################
+#load env vars
+use Env qw (ARCH
+            HOST
+            USER
+            CCPROJECTHOME
+	        CCPRODVER	
+	        CCPROD
+           );
+use Getopt::Long;
+use File::stat;
+
+my $help='';
+my $machine='';
+my $user='';
+$opt_status = GetOptions( 'h'   => \$help, 
+			  'm=s' => \$machine,
+			  'u=s' => \$user,
+                           );
+
+&analize_param ;
+
+if ( $ARCH eq "AIX" )
+{
+	my $start_time=`ps -efu $USER | grep hbuild_product | grep -v grep | tail -1 | cut -f6 -d" "`;
+}
+else
+{
+	my $start_time=`ps -efu $USER | grep hbuild_product | grep -v grep | tail -1 | cut -f6 -d" "`;
+}
+
+my @module_list=&get_module_list;
+chomp(@module_list);
+
+print "\n====================================================================================================================\n";
+print "                                                        CCJOBS                                                      \n";
+print "====================================================================================================================\n";
+print " ";
+print  "\n  $ARCH  $HOST  $USER \n";
+print  "  Build is running on $CCPRODVER \n";
+print  "  Build start at $start_time \n";
+$current_level=&get_current_module_level;
+if ( $current_level > -1 )
+{
+	print "\n Current build level $current_level: \n";
+}
+
+&do_validation ;
+$uptime = `uptime | tr -s " " | cut -d" " -f2-`;
+print "  $uptime";
+
+$tcsh = "-tcsh";
+
+$ulen = length($USER);
+
+if ($ARCH eq "SunOS") {
+	$bdf_cmd = "df -k /*$CCPROJNAME*home* /*$CCPROJNAME*proj* ";
+	$bdf_fs = `$bdf_cmd | grep -E 'home|proj' | tr -s " " | cut -d" " -f5,6 | xargs echo `;
+	if ($ulen == /8/)
+	{
+		@shells = `ps -o user,pid,ppid,c,stime,tty,time,args -fu $USER | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f2` ;
+	}
+	else
+	{
+		@shells = `ps -o user,pid,ppid,c,stime,tty,time,args -fu $USER | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f3` ;
+	}
+	@cronid = `ps -ef | grep cron | grep -v grep | tr -s " " | sort -k 5,5 | cut -d" " -f3`;
+	push(@shells,@cronid);
+	$ps_cmd = "ps -o user,pid,ppid,c,stime,tty,time,args -fu $USER";
+	@ps_lines = `$ps_cmd`;              # get a list of all user's process
+} elsif ($ARCH  eq "AIX") {
+	$bdf_cmd = "df -k /*$CCPROJNAME*home* /*$CCPROJNAME*proj* ";
+	$bdf_fs = `$bdf_cmd | grep -E 'home|proj' | tr -s " " | cut -d" " -f6,7 | xargs echo `;
+	if ($ulen == /8/)
+	{
+		@shells = `ps -flu $USER | tr -s " " | cut -d " " -f4-7,13-15,16- | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f2` ;
+	}
+	else
+	{
+		@shells = `ps -flu $USER | tr -s " " | cut -d " " -f4-7,13-15,16- | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f3` ;
+	}
+	@cronid = `ps -ef | grep cron | tr -s " " | sort -k 5,5 | cut -d" " -f3`;
+	push(@shells,@cronid);
+	$ps_cmd = "ps -flu $USER";
+	@ps_lines = `$ps_cmd | tr -s " " | cut -d " " -f4-7,13-15,16-`;              # get a list of all user's process
+} elsif ($ARCH  eq "HP-UX")  {
+	$bdf_cmd = "bdf /*$CCPROJNAME*home* /*$CCPROJNAME*proj* ";
+	$bdf_fs = `$bdf_cmd | grep -E 'home|proj' | tr -s " " | cut -d" " -f5,6 | xargs echo `;
+	if ($ulen == /8/)
+	{
+		@shells = `ps -fu $USER | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f2` ;
+	}
+	else
+	{
+		
+		@shells = `ps -fu $USER | grep -- -tcsh | tr -s " " | sort -k 5,5 | cut -d" " -f3` ;
+	}
+	@cronid = `ps -ef | grep cron | grep -v grep | tr -s " " | sort -k 5,5 | cut -d" " -f3`;
+	push(@shells,@cronid);
+	$ps_cmd = "ps -fu $USER";
+	@ps_lines = `$ps_cmd`;              # get a list of all user's process
+}
+
+@bdf_arr = split(' ',$bdf_fs);
+$num = @bdf_arr;
+my $tab = 0;
+$bdf_out =  join (" ",reverse @bdf_arr);
+$bdf_disp = `echo $bdf_out | sed "s/ / -> /g" | sed "s/% -> /%; /g"`;
+print "  $bdf_disp\n";
+
+shift(@ps_lines);                   # skip the header line
+#print " @ps_lines :";
+print " ";
+$dispall = " ";
+&main_shell_process_loop(@shells);
+
+#print "\n\n==================================================================================================================\n";
+
+print "\n====================================================================================================================\n";
+print "                                      Build status module wise                                                          ";
+print "\n====================================================================================================================\n";
+
+#######Added by Vaibhav Chitale###############
+&get_build_status_for_module;
+
+print "\n====================================================================================================================\n";
+exit 0;
+
+
+
+##############################################################################################################################
+
+#######Function get_build_status_for_module added by Vaibhav Chitale###############
+
+sub get_build_status_for_module
+{
+	my @my_module_list=@module_list;
+	#my %my_hash_module=`cat $CCPROJECTHOME/product/$CCPROD/$CCPRODVER/config/$ENV{CCPROD}_$ENV{CCPRODVER}_modbo.dat | cut -f1,2 -d" "`;
+	my @my_module_build_level=split(" ",`cat $CCPROJECTHOME/product/$CCPROD/$CCPRODVER/config/$ENV{CCPROD}_$ENV{CCPRODVER}_modbo.dat | cut -f1 -d" "`);
+	my $flag="";
+	my $build_level="";
+	my $running_module="";
+	my $count=-1;
+	print "\t Build Level \t Module \t Status \n";
+	foreach $md (@my_module_list)
+	{
+		$count=$count+1;
+		chomp($md);
+		if ($ARCH eq "AIX")
+		{
+			$flag=`ps -fu $USER | grep hbuild_module | grep -v grep | grep " $md " | tail -1`;
+		}
+		else
+		{
+			$flag=`ps -fu $USER | grep hbuild_module | grep -v grep | grep " $md " | tail -1`;
+		}
+			
+		
+		if ( $flag ne "" )
+		{
+			print "\t $my_module_build_level[$count] \t\t $md \t\t running \n";
+		} else
+		  {
+			my @temp_array=split(" ",`ps -fu $USER | grep hbuild_module | grep -v grep | tail -1`);
+			my $tmp = @temp_array;
+			if ( $tmp != 0 )
+			{
+				if ( $temp_array[9] ne "-c" ) 
+				{
+					$running_module=$temp_array[11];
+				}
+				else
+				{
+					$running_module=$temp_array[10];
+				}
+				#if ($my_hash_module{$md} > $my_hash_module{$running_module} ) 
+				#{
+				#	print "\t $md \t\t waiting \n";
+				#}else
+				#{
+				#	print "\t $md \t\t completed \n";
+				#}
+				
+			} 
+		  }
+	}
+}
+sub analize_param 
+{
+	if ($help != '') 
+	{
+		&usage;
+		exit 1;
+	}
+
+	if ($machine ne '')
+	{
+		$HOST = $machine;
+		if ($user eq '')
+		{
+			print " !!! USER not given\n";
+			&usage;
+			exit 1;
+		}
+	}
+
+	if ($user ne '')
+	{
+		$USER = $user;
+	}
+
+
+	if (($machine ne '') && ($user ne ''))
+	{ 
+		system("remsh $HOST -l $USER -n 'source ~/.login;~/bin/Ccjobs.pl'");
+		exit 1;
+	}
+}
+
+##############################################################################################################################
+
+sub do_validation
+{
+	$user_check = `grep ^$user /etc/passwd`;
+	if ($user_check eq '')
+	{
+		print " !!! Not a valid user name\n";
+		&usage;
+		exit 1;
+	}
+
+	if (index($USER,$CCPROJNAME) < 0) 
+	{
+		print " Not a CC account ; This Script is for CC accounts only\n";
+		exit 1;
+	}
+
+	$CURRDIR = `dirname $0`;
+	chop($CURRDIR);
+	#print " CURRDIR: $CURRDIR/infile";
+	open(FILE, "< $CURRDIR/infile") or die ("Requires input file. Failed to open input file named 'infile' containing processes to check, $!\n");
+	close(FILE);
+
+}
+
+##############################################################################################################################
+
+sub main_shell_process_loop(@shells)
+{
+	local($shells) = @_;
+	foreach $process (@shells)
+	{
+	#	print " Shell ID : $process";
+		$tab = 0;
+	#	$store = 0;
+		&process_check_loop($process);
+	}
+}
+
+##############################################################################################################################
+
+sub process_check_loop($process) 
+{
+	local($process) = @_;
+	local($dummy,$pid,$ppid);
+	local($fl);
+	local($d1,$d2,$d3,$d4,$d5,$d6,$d7,$pr);
+	local(@fields);
+	local($f1,$f2);
+	local($f3,$f4);
+	local($disp);
+	local($disp1,$disp2);
+
+		foreach $line (@ps_lines) 
+		{
+			($dummy,$pid,$ppid) = split(' ',$line,4);
+				if ($ppid == $process) 
+				{
+					$tab = $tab + 1;
+					open(MYINPUTFILE, "< $CURRDIR/infile");
+					while(<MYINPUTFILE>) 
+					{ 
+						my($fileline) = $_;
+						($fl) = split(' ',$fileline,2);
+						if ( index($line,$fl) > 0 ) 
+						{
+							#print "\n tab : $tab \n";
+							if ($store <= $tab) # store the value of number of tabs in last line
+							{
+								$store = $store + 1;
+							}
+							else
+							{
+								$store = $tab; # store tab value of parent
+							}
+							if ($store == 1)
+							{
+								$tab = 1;
+							}
+
+							close(MYINPUTFILE);
+							($d1,$d2,$d3,$d4,$d5,$d6,$d7,$pr) = split(' ',$line,8);
+							($f1,$f2) = split('>',$pr,2);
+							($f3,$f4) = split('-l',$f1,2);
+							@fields = split('/',$f3);
+							$disp = pop(@fields);
+							($disp1,$disp2) = split('\n',$disp,2); # Truncate End of Line
+							#print "$disp1\n";
+							$nspdisp = `echo $disp1 | sed "s/ //g"`; #Remove all Spaces
+							($nspdisp1,$nspdisp2) = split('\n',$nspdisp,2);
+							if (index($dispall,$nspdisp1) < 0)
+							{
+								print "\n";
+								#print "\n store : $store \n";
+								for ($t=1;$t<=$store;$t++)
+								{
+					 				if ($store == 1)
+									{
+										print "-> ";
+									}
+									else
+									{
+										print "   ";
+									}
+								}
+								print "$disp1";
+							
+								if (((index($disp1,hbuild_proj) >= 0 ) ||  (index($disp1,ccbuild) >= 0 )) && (index($disp1,harccbuild) < 0 ))
+								{
+									&disp_proj_log($disp1);
+								}
+								if (index($disp1,build_bb) >= 0 )
+								{
+									&disp_bb_log($disp1);
+								}
+								$dispall = join "", $dispall, $nspdisp1;
+							}
+						}
+					}
+					&process_check_loop($pid);
+					$tab = $tab - 1;
+				}
+		}
+}
+
+##############################################################################################################################
+
+sub disp_proj_log($display) 
+{
+	local($display) = @_;
+	local($proj);
+	local($var);
+	local($ccproj);
+	local($disp_file);
+	local($disp_line);
+	local($disp_line_50);
+	if (index($display,"-j") >= 0)
+	{
+		$proj = `echo $display | tr -s " " | sed "s/-j/*/g" | cut -d"*" -f 2 | cut -d" " -f2 `;
+	
+		chop($proj);
+	
+		if (index($display,"-v") >= 0)
+		{
+			$var = `echo $display | tr -s " " | sed "s/-v/*/g" | cut -d"*" -f 2 | cut -d" " -f2`;
+		}
+		if($var != //)
+		{
+			$var = join "","V",$var;
+			chop($var);
+		}
+
+		$ccproj = join "",$proj,$var;
+		$file = "$CCPROJECTHOME/$CCPRODVER/$CCPROD/Audit/proj/log.$ccproj/*ccbuild.log*";
+                if (-s "$file") {
+		    $disp_file = `ls -rt $file | tail -1`;
+		    $disp_line = `tail -1 $disp_file `;
+		    $disp_line_50 = substr($disp_line, 0, 40);
+		    chop($disp_line_50);
+		    print "<$disp_line_50>";
+                } else {
+                    print "";
+                }
+	}
+
+}
+
+##############################################################################################################################
+
+sub disp_bb_log($display) 
+{
+	local($display) = @_;
+	local($proj);
+	local($var);
+	local($bb);
+	local($ccproj);
+	local($disp_file);
+	local($disp_line);
+	local($disp_line_50);
+	if (index($display,"-j") >= 0)
+	{
+		$proj = `echo $display | tr -s " " | sed "s/-j/*/g" | cut -d"*" -f 2 | cut -d" " -f2 `;
+		chop($proj);
+		if (index($display,"-a") >= 0)
+		{
+			$var = `echo $display | tr -s " " | sed "s/-a/*/g" | cut -d"*" -f 2 | cut -d" " -f2`;
+		}
+		if($var != //)
+		{
+			$var = join "","V",$var;
+			chop($var);
+		}
+
+		$ccproj = join "",$proj,$var;
+		if (index($display,"-b") >= 0)
+		{
+		$bb = `echo $display | tr -s " " | sed "s/-b/*/g" | cut -d"*" -f 2 | cut -d" " -f2`;
+		}
+		chop($bb);
+
+		$file = "$CCPROJECTHOME/$CCPRODVER/$CCPROD/Audit/proj/log.$ccproj/log.$bb/*build.log.*";
+		$disp_file = `ls -rt $file | tail -1`;
+		chop($disp_file);
+		$disp_line = `less $disp_file | grep "phase" | tail -1`;
+		$disp_line_50 = substr($disp_line, 0, 40);
+		chop($disp_line_50);
+		print " <$disp_line_50>";
+	}
+}
+
+##############################################################################################################################
+
+sub usage 
+{
+	print "
+          Usage   : Ccjobs [ -u user | -m machine -u user ] [-h]    
+	  Example : Ccjobs  
+                    Ccjobs -u ccbmc 
+		    Ccjobs -m snvi001 -u cctst
+	\n";
+}
+
+##############################################################################################################################
+
+sub get_running_module
+{
+	my $flag=0;
+	my $count=0;
+	#@module_list = `cat $ENV{CCPROJECTHOME}/product/$ENV{CCPROD}/$ENV{CCPRODVERSION}/config/$CCPROD_$ENV{CCPRODVERSION}_modbo.dat | cut -f2 -d" "`;
+	#chomp(@module_list);
+	foreach $md (@module_list)
+	{
+		$flag=`ps -fu $USER | grep $md | grep -v grep`;
+		if ( $flag == 0 )
+		{
+			$running_module_list[$count++] = $md;	
+		}
+	}
+	$flag=0;
+	foreach $md(@running_module_list)
+	{
+		chomp($md);
+		push @proj_list,`cat $ENV{CCPROJECTHOME}/module/$md/$ENV{CCPRODVERSION}/config/module_profile | grep -v PROJ | grep -v Base | cut -f1 -d" "`;
+		$flag=`ps -fu $USER | grep $proj | grep -v grep`;
+		if ( $flag == 0 )
+		{	
+			$running_proj_list[$count++] = $proj;
+		}
+	}
+}
+
+sub get_current_module_level
+{
+	my $running_module_level=-1;
+	my @my_module_list = @module_list;
+	my $flag=0;
+	foreach $md ( @my_module_list)
+	{
+		$flag=`ps -efu $ENV{USER} | grep $md | grep -v grep`;
+		
+		if ($flag != '' )
+		{
+			$running_module_level=`cat $CCPROJECTHOME/product/$CCPROD/$CCPRODVER/config/$ENV{CCPROD}_$ENV{CCPRODVER}_modbo.dat |grep $md | cut -f1 -d" "`;
+			break; 
+		}
+	}
+	return $running_module_level;
+}
+
+sub get_module_list
+{
+	my @list =`cat $CCPROJECTHOME/product/$ENV{CCPROD}/$CCPRODVER/config/$ENV{CCPROD}_$ENV{CCPRODVER}_modbo.dat | cut -f2 -d" "`;
+	return @list;
+}

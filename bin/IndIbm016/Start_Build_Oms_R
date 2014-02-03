@@ -1,0 +1,44 @@
+#!/usr/local/bin/tcsh
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+if ($#argv != 3) then
+   echo "Example: run_Promote <product> <version> <variant>"
+   echo "Example: run_Promote lel 750 64OG"
+   exit (1)
+endif
+
+hupdateFileSystem -l PRODUCTVER -p $1 -r v$2 -va "$3" 
+
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/CRM_AMSS_800.properties force
+
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/CRM_OMS_800.properties force
+
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/ABP_AMSS_800.properties force
+
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/ABP_OMS_800.properties force
+
+
+#  increase the build counter
+$HARVESTDIR/bin/refresh -B -machine $HOST -pd $1 -v $2
+
+# promote the packages to Build Approval state
+#$HARVESTDIR/bin/refresh -P -machine $HOST -pd $1 -v $2
+
+# prepare the xml file and run the refresh command
+$HARVESTDIR/bin/refresh -XML -machine $HOST -pd $1 -v $2 -dnum 10 -execute
+\cp -f /clrhome/clr/ccclr/mb_ccclr/bb/gord1core/v80_0/lib/AmdocsCihDatatypes.jar /clrhome/clr/ccclr/mb_ccclr/bb/gord1core/v80_0/lib/AmdocsCihDataTypes.jar
+
+#getting the refresh report via e-mail
+#$CCPROJECTHOME/bin/refresh_report $1 "" "nbuildreports@amdocs.com"
+
+#build commnad
+#/sdkhome/sdk/SDKRoot/CRM800/tools/build/bin/hbuild_product -n oms -v v800 -t 64OG -b Module -DB -SM -SW Module -AsItIs 
+/sdkhome/sdk/SDKRoot/CRM800/tools/build/bin/hbuild_product -n oms -v v800 -t 64OG -b Module -DB -AsItIs 
+
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/OMS_AMSS_800.properties force
+/clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/Start_Sync.sh 800 /clrhome/clr/ccclr/mb_ccclr/bin/SyncJar/OMS_CRM_800.properties

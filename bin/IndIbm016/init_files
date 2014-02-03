@@ -1,0 +1,46 @@
+#============================================================
+#== this is the input file for ccInitChk.pl
+#==
+#== On Enabler the stem file could be for 
+#==
+#== HP-UX : /etc/csh.login
+#== AIX   : /etc/csh.login
+#== SunOS : /local/site-init-files/csh.login
+#==
+#== Just add the word "STEM" at the begining of the stem file
+#== This file is for AIX 
+#== Put all the files from the stem and downwards
+#== You can even add tilde like: ~ccmngr etc..
+#== Lines with number signs are ignored
+#== Lines empty or blanks are ignored
+#==
+#=============================================================
+STEM   /etc/csh.login
+/etc/csh.cshrc
+/etc/csh_login.CA
+$HOME/.login
+$HOME/.cshrc
+$SDKHOME/.ccmngr_login
+$SDKHOME/.ccmngr_cshrc
+$SDKHOME/$SDKRELEASE/tools/build/bin/SetEnv_cc_local.sh
+$CCMNGRHOME/bin/SetEnv_cc_local.sh
+$CCPROJECTHOME/data/cc_local.dat
+$CCPROJECTHOME/data/cc_local.dat.$CCPRODUCTVER
+$SDKHOME/.ccmngr_aliases
+$SDKHOME/.ccprojecthome.setup
+$SDKHOME/.ccmngr_aliases
+$CCPROJECTHOME/proj/.project.csh
+$CCMPA/.project.setup
+$SDKHOME/.ccprojecthome.setup
+$CCMNGRHOME/config/.product.setup
+$CCPROJECTHOME/product/$CCPRODUCT/$CCPRODUCTVER/config/.projects.cust.setup
+$CCPROJECTHOME/product/$CCPRODUCT/$CCPRODUCTVER/config/.SDK.setup
+$SDKHOME/$SDKRELEASE/tools/build/config/.ccsdk_init
+$CCMNGRHOME/config/.3rdparty.setup
+$CCMNGRHOME/config/.projects.setup
+$CCMNGRHOME/config/.MD.setup
+$CCPROJECTHOME/product/$CCPRODUCT/$CCPRODUCTVER/config/.product.cust.setup
+$CCPROJECTHOME/product/$CCPRODUCT/$CCPRODUCTVER/config/.3rdparty.cust.setup
+$CCPROJECTHOME/product/$CCPRODUCT/$CCPRODUCTVER/config/.MD.cust.setup
+$oracle_home/.env_ora_setup
+$HARVESTSERVERDIR/bin/set_env.setup

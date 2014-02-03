@@ -1,0 +1,215 @@
+2010-08-18 Erwin Waterlander <waterlan@xs4all.nl>
+	* version 5.1.1
+
+2010-07-23 Erwin Waterlander <waterlan@xs4all.nl>
+	* Added Dutch translation of the manual.
+
+2010-07-19 Erwin Waterlander <waterlan@xs4all.nl>
+	* MinGW-w64 Makefile added for Windows 64 bit port.
+
+2010-06-20 Erwin Waterlander <waterlan@xs4all.nl>
+	* Don't ship po/*.mo files in source package.
+	* Win32 binary package uses patched MinGW's libintl, with builtin
+	  relocation support. See http://www.xs4all.nl/~waterlan/libintl.html
+
+2010-04-22 Erwin Waterlander <waterlan@xs4all.nl>
+	* Support compilation in DOSBox (8.3 file names where needed).
+
+2010-04-14 Erwin Waterlander <waterlan@xs4all.nl>
+	* Fixed compilation on Darwin OS. Thanks to Marc Gianzero.
+
+2010-04-03 Erwin Waterlander <waterlan@xs4all.nl>
+	* version 5.1
+
+2010-03-22 Erwin Waterlander <waterlan@xs4all.nl>
+	* Man page generation from Perl POD file.
+	  Thanks to Jari Aalto <jari.aalto@cante.net>
+	* Merge dos2unix and unix2dos man pages.
+
+2010-03-17 Erwin Waterlander <waterlan@xs4all.nl>
+	* Add localization information to manual.
+
+2010-03-16 Rugxulo <rugxulo@gmail.com>
+	* Added Esperanto translation.
+
+2010-03-13 Erwin Waterlander <waterlan@xs4all.nl>
+	* DJGPP, dos32bit: Create 'stubs' for mac2unix and unix2mac.
+	  See also http://www.delorie.com/djgpp/v2faq/faq22_5.html
+	  Thanks to Rugxulo <rugxulo@gmail.com>
+
+2010-03-11 Erwin Waterlander <waterlan@xs4all.nl>
+	* Allow to set options in stdio mode.
+	* dos2unix: bugfix MAC mode: Don't change DOS line endings.
+	* Display help if a wrong option was used.
+
+2010-03-04 Erwin Waterlander <waterlan@xs4all.nl>
+	* Port to 16 bit DOS, using OpenWatcom.
+
+2010-03-03 Erwin Waterlander <waterlan@xs4all.nl>
+	* Port to 16 bit DOS, using Borland C.
+
+2010-02-16 Erwin Waterlander <waterlan@xs4all.nl>
+	* version 5.0
+
+2010-02-15 Erwin Waterlander <waterlan@xs4all.nl>
+	* unix2dos: Fix problem of reading Mac files.
+	* unix2dos: Added command 'unix2mac'.
+	* unix2dos: Can use DOS2UNIX_LOCALEDIR i.s.o. UNIX2DOS_LOCALEDIR.
+	* dos2unix: 'mac2unix' command can have a prefix.
+	* Makefile: mac2unix and unix2mac are installed as soft links.
+
+2010-02-13 Erwin Waterlander <waterlan@xs4all.nl>
+	* Bundled dos2unix and unix2dos in one package.
+	* dos2unix/unix2dos : Cleanup messages and manual.
+	* dos2unix: Option -l --newline also works in MAC mode.
+	* unix2dos: Added option -l, --newline.
+	* unix2dos: Added MAC mode. Convert Unix line endings
+	  to Mac line endings.
+
+2010-02-10 Erwin Waterlander <waterlan@xs4all.nl>
+	* unix2dos: Makefile : 
+	  - Use GNU standard directory variables everywhere.
+	  - New target 'dist-tbz' creates bzip2 compressed archive.
+
+2010-02-10 Philipp Thomas <psmt@opensuse.org>
+	* unix2dos: po/de.po : Added German translation.
+	* unix2dos: Makefile :
+	  - Added $(RPM_OPT_FLAGS) to CFLAGS.
+	  - Use DESTDIR only in install and uninstall targets (not in variables,
+	    this is more common practice).
+
+2010-02-03 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix: Makefile : 
+	  - Use GNU standard directory variables everywhere.
+
+2010-02-03 Philipp Thomas <psmt@opensuse.org>
+	* dos2unix: po/de.po : Added German translation.
+	* dos2unix: Makefile :
+	  - Use GNU standard directory variable 'datadir' i.s.o. 'sharedir'.
+	  - Added $(RPM_OPT_FLAGS) to CFLAGS.
+	  - New target 'dist-tbz' creates bzip2 compressed archive.
+	  - Use DESTDIR only in install and uninstall targets (not in variables,
+	    this is more common practice).
+
+2010-02-02 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: Update Dutch translation.
+
+2010-01-24 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: version 4.1.2
+
+2010-01-22 Tim Waugh <twaugh@redhat.com>
+	* dos2unix/unix2dos: Preserve file mode in 'new file mode'.
+	* dos2unix/unix2dos: Makefile: Allow CFLAGS to be set externally.
+
+2010-01-21 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: version 4.1.1
+	* dos2unix/unix2dos: Fix compilation on FreeBSD.
+	* dos2unix/unix2dos: Changed home page URL to http://www.xs4all.nl/~waterlan/dos2unix.html
+
+2009-12-28 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: version 4.1
+	* dos2unix/unix2dos: Automatically skip binary files.
+	* dos2unix/unix2dos: Automatically skip non-regular files.
+	* dos2unix/unix2dos: New option: -f --force: Force conversion of all files.
+	* dos2unix/unix2dos: Option -h: Print options in alphabetical order.
+	* dos2unix/unix2dos: Update manual.
+	* dos2unix/unix2dos: ISO mode:
+	  - Non-convertable characters are converted to a dot.
+	    Old conversion risked conversion to unwanted ISO C1
+	    control characters from ISO 6429.
+	  - Fixed wrong conversion of Interpunct.
+	  - Don't convert ASCII control characters
+	    DC4 (Pilcrow, 0x14) and NAK (Section-sign, 0x15).
+
+2009-12-21 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: version 4.0.1
+	* dos2unix/unix2dos: man page improvements: Thanks to Jari Aalto <jari.aalto@cante.net>.
+	  - Replace hyphens with minus signs (look like dashes) where needed.
+	  - Options in alphabetical order.
+	* dos2unix/unix2dos: man page: Update ISO mode information.
+	* dos2unix/unix2dos: Option -V prints localedir used.
+	* dos2unix: Localedir can be overruled with environment variable
+	  DOS2UNIX_LOCALEDIR.
+	* unix2dos: Localedir can be overruled with environment variable
+	  UNIX2DOS_LOCALEDIR.
+	* dos2unix/unix2dos: Fixed two wrong conversions in ISO mode:
+	  - Greek mu.
+	  - Closing guillemet (angle quotation mark, >>).
+	* dos2unix/unix2dos: Port to OS/2 Warp: Thanks to Elbert Pol <elbertdotpol@gmail.com>.
+	* dos2unix/unix2dos: Makefiles: Added target 'strip'.
+
+2009-12-15 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix/unix2dos: version 4.0
+	* dos2unix/unix2dos: Added internationalisation using gettext.
+	* dos2unix/unix2dos: Added Dutch translation.
+	* dos2unix/unix2dos: Ported to Win32 using Mingw32 <http://www.mingw.org/>
+	* dos2unix/unix2dos: Ported to DOS using DJGPP <http://www.delorie.com/djgpp/>
+	* dos2unix/unix2dos: Fixed problem in DOS/Windows stdio mode.
+	* dos2unix/unix2dos: New option -L/--license that prints software license.
+	* dos2unix/unix2dos: Code cleanup
+	* dos2unix/unix2dos: Update manual
+
+2009-12-04 Erwin Waterlander <waterlan@xs4all.nl>
+	* dos2unix: version 3.2
+	* unix2dos: version 2.3
+	* dos2unix/unix2dos: version.mk: New file.
+	* dos2unix/unix2dos: README: New file.
+	* dos2unix/unix2dos: ChangeLog : New file.
+	* dos2unix: INSTALL: Updated.
+	* dos2unix/unix2dos: Makefile: Makefile according GNU standards.
+	* unix2dos: INSTALL: New file.
+	* dos2unix: Applied all patches from RedHat:
+	  - use mkstemp i.s.o. mktemp: Nov 17 2000 Tim Powers <timp@redhat.com> 
+	  - segfault: Jan 17 2002 Bernhard Rosenkraenzer <bero@redhat.com>
+	  - safeconv: Oct 20 2004 Miloslav Trmac <mitr@redhat.com>
+	  - manpage-update: Oct  6 2004 Mike A. Harris <mharris@redhat.com>
+	  - preserve-file-modes: Feb  6 2007 Tim Waugh <twaugh@redhat.com>
+	  - tmppath: Apr 13 2005 Tim Waugh <twaugh@redhat.com>
+	  - c-missing-arg: Jan 18 2008 Tim Waugh <twaugh@redhat.com>
+	  - Remove trailing white space.
+	* unix2dos: Applied all patches from RedHat:
+	  - use mkstemp i.s.o. mktemp: Nov 17 2000 Tim Powers <timp@redhat.com> 
+	  - segfault: Jan 17 2002 Bernhard Rosenkraenzer <bero@redhat.com>
+	  - manpage-update: Oct  6 2004 Mike A. Harris <mharris@redhat.com>
+	  - preserve-file-modes: Oct 11 2004 Tim Waugh <twaugh@redhat.com>
+	  - tmppath: Apr 13 2005 Tim Waugh <twaugh@redhat.com>
+	  - Remove trailing white space. 
+
+1998-11-19 Christian Wurll <wurll@ira.uka.de>
+	* dos2unix: version 3.1
+	* dos2unix: Added extra newline if ^M occurs
+
+1998-02-04 Bernd Johannes Wuebben <wuebben@kde.org>
+	* dos2unix: version 3.0
+	* dos2unix: Added Mac text file translation, i.e. \r to \n conversion
+
+1995-03-30 Benjamin Lin <blin@socs.uts.edu.au>
+	* dos2unix/unix2dos: version 2.2
+	* dos2unix: Fixed a bug in 2.1 where in new file mode, if outfile already exists
+	* dos2unix: conversion can not be completed properly.
+	* unix2dos: Conversion from SunOS charset implemented.
+
+1995-03-29 Benjamin Lin <blin@socs.uts.edu.au>
+	* dos2unix: version 2.1
+	* dos2unix: Conversion to SunOS charset implemented.
+
+1995-03-19 Benjamin Lin <blin@socs.uts.edu.au>
+	* dos2unix/unix2dos: version 2.0
+	* dos2unix/unix2dos: Rewritten from scratch.
+
+1995-03-16 Benjamin Lin <blin@socs.uts.edu.au>
+	* dos2unix: version 1.2
+	* unix2dos: version 1.3
+	* dos2unix/unix2dos: Modified to more conform to UNIX style.
+
+1995-03-09 Benjamin Lin <blin@socs.uts.edu.au>
+	* unix2dos: version 1.2
+	* unix2dos: Fixed minor typo error
+
+1994-12-20 Benjamin Lin <blin@socs.uts.edu.au>
+	* dos2unix/unix2dos: version 1.1
+	* dos2unix/unix2dos: Cleaned up for Borland C/C++ 4.02
+
+1989-10-04 John Birchfield <jb@koko.csustan.edu>
+	* dos2unix/unix2dos: version 1.0
+

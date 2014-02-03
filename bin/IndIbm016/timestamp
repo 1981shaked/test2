@@ -1,0 +1,3 @@
+#! /usr/local/bin/tcsh -f
+
+/bin/date '+%Y%m%d_%H%M%S'

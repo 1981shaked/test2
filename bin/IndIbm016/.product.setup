@@ -1,0 +1,353 @@
+setenv ARCH             `/bin/uname -s`
+setenv OSVER             `/bin/uname -r`
+setenv HW_MODEL         `/bin/uname -m`
+setenv CCPROD $CCPRODUCT 
+setenv CCPRODVER $CCPRODUCTVER 
+setenv ASLMFRETRY        20,30           #retry accessing busy licenses
+setenv ACM_MQSERIES_USE Y 
+setenv TOOLSLIBS        "-ltuxtp -linftl -linfgn"
+setenv NO_SHR_PROJ 1
+if ( "${ARCH}" == "AIX" ) then
+        unsetenv TOOLSLIBS
+endif
+
+###############################################################################
+## setting CCPROJECTHOME for Daily/Public
+###############################################################################
+if ( "${CCPROD}" != "lel") then
+        setenv SDK_JF_API_CLASSPATH
+        setenv SDK_JF_SHLIB_PATHS
+endif
+###############################################################################
+
+if ( ! $?homedir ) then
+    set homedir = `echo $HOME | /bin/cut -f3 -d/`
+endif                                                         
+                                 
+setenv CCPROJECTHOME_DAILY iNiT
+setenv CCPROJECTHOME_INTEGRATION iNiT
+setenv CCPROJECTHOME_DAILY "`echo ~cc${homedir}`"
+set i_user = `grep icc${homedir} /etc/passwd`
+
+if ( "${i_user}" != ""  ) then
+  setenv CCPROJECTHOME_INTEGRATION "`echo ~icc${homedir}`"
+endif
+
+## Daily & Integration CCPROJECTHOME 
+##    will be set to $CCPROJECTHOME in case that CCPROJECTHOME != ~ccip  
+#echo "CCPROJECTHOME= $CCPROJECTHOME :: CCPROJECTHOME_DAILY=$CCPROJECTHOME_DAILY :: CCPROJECTHOME_INTEGRATION= $CCPROJECTHOME_INTEGRATION\n"
+if ($CCPROJECTHOME != $CCPROJECTHOME_DAILY ) then
+   if ($CCPROJECTHOME != $CCPROJECTHOME_INTEGRATION ) then
+      setenv CCPROJECTHOME_DAILY $CCPROJECTHOME
+      setenv CCPROJECTHOME_INTEGRATION $CCPROJECTHOME
+   endif
+endif
+
+
+###############################################################################
+### Setting BITMODE                                                          ##
+###############################################################################
+if ( $CCPROJ =~ gchsrv*V*) then
+setenv CCVARIANT 32
+endif
+#echo "Check variant"
+
+if (! $?CCVARIANT ) then
+    setenv BITMODE    32
+else
+    if ( X${CCVARIANT}X =~ X*64*X ) then
+         setenv BITMODE    64
+    else
+        setenv BITMODE    32
+    endif
+endif
+
+if ( X${CCVARIANT}X =~ X*O*X ) then
+	## SET OPT AND DEBUG 
+	setenv ABP_OPTMZ Y
+       	
+	if ( X${CCVARIANT}X =~ X*G*X ) then
+		setenv ABP_DEBUG Y
+	else
+		setenv ABP_DEBUG N
+	endif
+else
+	setenv ABP_OPTMZ N
+	setenv ABP_DEBUG Y
+endif
+
+if ( "${ABP_DEBUG}" == "Y" ) then
+  setenv JAVA_DEBUG true
+else
+  setenv JAVA_DEBUG off
+endif
+
+if ( "${BITMODE}" == "64" ) then
+  setenv LINTMODE  NO
+endif
+###############################################################################
+### Setting the VER_IDENT file for the version identification tool
+###############################################################################
+  setenv VER_IDENT off
+
+###############################################################################
+### Initializing Various Setups                                              ##
+###############################################################################
+setenv CCCORETYPE 'FULL'
+if ( -x $CCMNGRHOME/bin/SetEnv_cc_local.sh) then
+    source $CCMNGRHOME/bin/SetEnv_cc_local.sh $CCPRODUCTVER
+endif
+
+if ( "${CCCORETYPE}" == "SDK" ) then
+    source ${SDKHOME}/${SDKRELEASE}/tools/build/config/.3rdparty.setup
+    source ${SDKHOME}/${SDKRELEASE}/tools/build/config/.projects.setup
+    source ${SDKHOME}/${SDKRELEASE}/tools/build/config/.MD.setup
+else
+    source ${CCPROJECTHOME}/product/${CCPROD}/${CCPRODVER}/config/.3rdparty.setup
+    source ${CCPROJECTHOME}/product/${CCPROD}/${CCPRODVER}/config/.projects.setup
+    source ${CCPROJECTHOME}/product/${CCPROD}/${CCPRODVER}/config/.MD.setup
+endif
+
+###############################################################################
+### SDK setup and initialization
+###############################################################################
+if ( -r ${CCPROJECTHOME}/product/${CCPRODUCT}/${CCPRODUCTVER}/config/.SDK.setup ) then
+    source ${CCPROJECTHOME}/product/${CCPRODUCT}/${CCPRODUCTVER}/config/.SDK.setup
+    echo "\n\t Executing ${CCPROJECTHOME}/product/${CCPRODUCT}/${CCPRODUCTVER}/config/.SDK.setup ...\n"
+endif
+#
+###############################################################################
+### Parallel Build
+###############################################################################
+if ( "${ARCH}" == "SunOS" ) then
+	setenv DEP_PAR_FLAG YES
+endif
+if ( "${ARCH}" == "HP-UX" ) then
+        setenv DEP_PAR_FLAG YES
+endif
+###############################################################################
+### For FOX - XGEN build                                                     ##
+###############################################################################
+# If not in SDK uses the XGEN variable from .projects.setup
+###############################################################################
+if ( "${CCCORETYPE}" == "SDK" ) then
+    setenv XGEN_PATH        ${SDK_TOOLS_HOME}/bin
+endif
+setenv MODVER           ${CCPRODVER}
+setenv COMPVER          ${CCVER} 
+setenv COMPNAME         ${CCMODULE} 
+setenv CCJAVA_BB        proj/${CCPROJ}/${CCMODULE}_generated
+setenv DOMGEN_WITH_CLOB yes
+setenv DOX_PATH         ${XGEN_PATH}
+
+###############################################################################
+### SAGIT variables for customization                                        ##
+###############################################################################
+if ( "${CCCORETYPE}" == "FULL" ) then
+	setenv ADDED_SAGIT_ARGS ""
+        setenv MDT_PATH ""
+	setenv CCLAYER 1
+else
+	setenv ADDED_SAGIT_ARGS "-DsdkLocation=${SDKHOME}/${SDKRELEASE}"
+        setenv MDT_PATH "-DmdtPath=${SDKHOME}/${SDKRELEASE}/modules/${CCMODULE}/metadata/mdt.jar"
+	setenv CCLAYER 9
+endif
+
+###############################################################################
+### GN, ATL and INF variables for generators and CLASSPATH                   ##
+###############################################################################
+if ( "${CCCORETYPE}" == "FULL" ) then
+  setenv APP_GN_CLASSES_PATH ${MD_GN_API_CLASSES_PATH}
+  setenv APP_INF_BIN_PATH ${GTL_HOME}/bin
+  setenv APP_INF_LIB_PATH ${GTL_HOME}/lib
+  setenv APP_INF_CLASSES_PATH ${APP_INF_LIB_PATH}/uams.jar:${APP_INF_LIB_PATH}/ejbInfra.jar
+  setenv APP_ATL_BIN_PATH ${ATL_HOME}/bin
+  setenv APP_ATL_LIB_PATH ${ATL_HOME}/lib
+  if ( "${CCWPA}" == "${CCMPA}" ) then
+    setenv APP_ATL_CLASSES_PATH ${ATL_HOME}/classes
+  else
+    setenv APP_ATL_CLASSES_PATH ${HOME}/proj/${ACM_GINFJ}/classes:${ATL_HOME}/classes
+  endif
+else
+  if ( $?SDK_JF_API_CLASSPATH ) then 
+    setenv APP_GN_CLASSES_PATH ${SDK_JF_API_CLASSPATH}
+  endif
+  setenv APP_INF_BIN_PATH ${SDK_TOOLS_HOME}/bin
+  setenv APP_INF_LIB_PATH ${SDK_TOOLS_HOME}/lib
+
+# Set tcsh option to avoid message when filename pattern does not match a file
+  set jarfiles=`echo "${SDK_RELEASE_HOME}/modules/${module}/lib/${ARCH}/*.jar" | perl -e '$p=<>;@f=glob($p);print "@f\n";'| /bin/sed -e 's/ /:/g'`
+  setenv APP_INF_CLASSES_PATH $jarfiles
+  unset nonomatch
+  unset jarfiles
+
+  setenv APP_ATL_BIN_PATH ${SDK_TOOLS_HOME}/bin
+  setenv APP_ATL_LIB_PATH ${SDK_JF_SHLIB_PATHS}
+  setenv APP_ATL_CLASSES_PATH ${APP_INF_CLASSES_PATH}
+endif
+
+####################
+# reg exp jar
+####################
+setenv REGEXP_JAR ${APP_INF_LIB_PATH}/gnu-regexp-1.1.4.jar
+
+###############################################################################
+### for sonar                                                                ##
+###############################################################################
+if ( "${CCCORETYPE}" == "FULL" ) then
+	setenv  SONAR_JARS_DIR  ${GTL_HOME}/lib 
+else
+	setenv  SONAR_JARS_DIR ${SDK_TOOLS_HOME}/lib
+endif
+
+###############################################################################
+### PATH Additions (GTL is required by XGEN as well)                         ##
+###############################################################################
+
+set path = (${CCPROJECTHOME}/proj/${ACM_OP_GOPACM}/bin `echo $path | sed "s;${CCPROJECTHOME}/proj/${ACM_OP_GOPACM}/bin;;g"` )
+set path = (${CCPROJECTHOME}/proj/${ACM_GGEN}/bin `echo $path | sed "s;${CCPROJECTHOME}/proj/${ACM_GGEN}/bin;;g"` )
+set path = (${CCPROJECTHOME}/proj/${ACM_GCPF}/bin `echo $path | sed "s;${CCPROJECTHOME}/proj/${ACM_GCPF}/bin;;g"` )
+set path = (${XGEN_PATH} `echo $path | sed "s;${XGEN_PATH};;g"` )
+set path = (${GSCRIPTS_HOME} `echo $path | sed "s;${GSCRIPTS_HOME};;g"` )
+set path = (${APP_INF_BIN_PATH} `echo $path | sed "s;${APP_INF_BIN_PATH};;g"` )
+set path = (${APP_ATL_BIN_PATH} `echo $path | sed "s;${APP_ATL_BIN_PATH};;g"` )
+set path = (${JAVA_HOME}/bin `echo $path | sed "s;${JAVA_HOME}/bin;;g"` )
+set path = (${ANT_HOME}/bin `echo $path | sed "s;${ANT_HOME}/bin;;g"` )
+set path = (${ABP_CPP_COMPILER_DIR}/bin `echo $path | sed "s;${ABP_CPP_COMPILER_DIR}/bin;;g"` )
+
+if ( "${ARCH}" == "HP-UX" ) then
+  set path = (/opt/imake/bin `echo $path | sed "s;/opt/imake/bin;;g"` )
+endif
+if ( "${ARCH}" == "SunOS" ) then
+  set path = (/usr/xpg4/bin `echo $path | sed "s;/usr/xpg4/bin;;g"` )
+  set path = (/usr/local/bin `echo $path | sed "s;/usr/local/bin;;g"` )
+  set path = (`echo $path | sed "s;/usr/openwin/bin;;g"` /usr/openwin/bin )
+endif
+
+set path = (`echo $path | sed "s;/usr/ccs/bin;;g"` /usr/ccs/bin )
+
+#For CH and DE related operations
+#################################
+set path = (${CCPROJECTHOME}/proj/${ACM_CH_CHAPI}/bin `echo $path | sed "s;${CCPROJECTHOME}/proj/${ACM_CH_CHAPI}/bin;;g"` )
+
+###############################################################################
+if ( "${CCCORETYPE}" == "FULL" ) then
+	setenv MSG_PATH		"${MSG_PATH};${GTL_HOME}/cnt;${CCPROJECTHOME}/proj/${ACM_CPF_GCPFL}/cnt;${CCPROJECTHOME}/proj/${ACM_CPF_GCPFLGN}/cnt"
+else
+	setenv MSG_PATH         "${MSG_PATH};${SDK_TOOLS_HOME}/bin"
+endif
+###############################################################################
+### Java Variables                                                           ##
+###############################################################################
+###########################################################
+# Environment Variables for RDM core export generator
+###########################################################
+setenv GEN_RDM_CE_CLASSPATH "${JDBC_HOME}/lib/classes12.zip:${CCMPA}/classes:${WL_HOME}/lib/weblogic.jar:${APP_ATL_LIB_PATH}/gjf_classes.jar"
+
+###########################################################
+# Environment Variables for DVM core export generator
+###########################################################
+setenv GEN_DVM_CE_CLASSPATH "${JDBC_HOME}/lib/classes12.zip:${CCMPA}/classes:${WL_HOME}/lib/weblogic.jar:${APP_ATL_LIB_PATH}/gjf_classes.jar"
+
+########
+setenv STATIC_RESOURCES "attributes bmp css dtd dwt gif htm html inc jpeg jpg js jsp modules properties psd template tld tproperties txt xls xml xsd xsl htc"
+setenv STATIC_RESOURCES_ROOT ${CCWPA}/classes
+setenv TLS3G_PROPERTIES_DEST_DIR ${CCWPA}/classes
+setenv TLS3G_PROPERTIES_DEST_DIR "${CCWPA}/cnt"
+###############################################################################
+### Libraries Suffixes                                                       ##
+###############################################################################
+if ( "${ARCH}" == "HP-UX" ) then
+  if ( "${HW_MODEL}" == "ia64" ) then
+  	 setenv DYNAMIC_LIB_EXT       so 
+         setenv OSNAME "HP-ITANIUM"
+  else
+  	 setenv DYNAMIC_LIB_EXT       sl
+  endif 
+endif
+if ( "${ARCH}" == "SunOS" ) then
+  setenv DYNAMIC_LIB_EXT        so
+endif
+if ( "${ARCH}" == "AIX" ) then
+  setenv DYNAMIC_LIB_EXT        so
+endif
+###############################################################################
+### LD_LIBRARY_PATH - SHLIB_PATH - LIBPATH                                   ##
+###############################################################################
+if ( $?CCSUBPROJPATH ) then
+set SubProjLibPath = ` echo $CCSUBPROJPATH | sed ' s/ /\/lib /g' | sed ' s/$/\/lib/g' | tr -s ' ' ':'`
+else
+
+set SubProjLibPath = ""
+endif
+setenv THE_ADDED_SH_PATH ""
+setenv THE_ADDED_SH_PATH "${CCWPA}/lib:${CCMPA}/lib:${MD_GN_API_SHLIBS_PATH}:${MD_CPF_API_SHLIBS_PATH}:${MD_UTL_API_SHLIBS_PATH}:${ACE_HOME}/ace:${ACE_HOME}/ace/SSL:${SYNCSORT}/lib:${TIMESTEN}/lib:${XERCES_DIR}/lib:${GMP_LIB}:${SSL_HOME}/lib:${XALANCPP_HOME}/lib:${CPPUNIT_HOME}/lib:${MOCKCPP_HOME}/lib:${CCWPA}/ut:${CCPROJECTHOME}/proj/${CCPROJ}/ut:${SubProjLibPath}"
+
+if ( "${ARCH}" == "HP-UX" ) then
+# On hp SHLIB_PATH is used for 32b even when compiling 64 b
+###########################################################
+  setenv SHLIB_PATH         "${THE_ADDED_SH_PATH}:${ORACLE_LIB32}:/usr/lib"
+
+  if ( "${BITMODE}" == "64" ) then
+    setenv LD_LIBRARY_PATH        "${THE_ADDED_SH_PATH}:${ORACLE_LIB}:/usr/lib/pa20_64:/usr/lib"
+  else
+   setenv LD_LIBRARY_PATH        "${SHLIB_PATH}"
+  endif
+endif
+
+if ( "${ARCH}" == "SunOS" ) then
+setenv LD_LIBRARY_PATH         "${ORACLE_LIB32}:${THE_ADDED_SH_PATH}:${LD_LIBRARY_PATH}:/usr/local/lib:/usr/lib"
+  if ( "${BITMODE}" == "64" ) then
+    setenv LD_LIBRARY_PATH_64      "${ORACLE_LIB}:${THE_ADDED_SH_PATH}:/usr/local64/lib:${JAVA_HOME}/jre/lib/sparcv9/server"
+  else
+    setenv LD_LIBRARY_PATH        "${LD_LIBRARY_PATH}:/opt/plat41/lib:/opt/plat41/caiptodbc/lib:/opt/plat41/pec/lib/sun4_solaris"
+  endif
+endif
+
+if ( "${ARCH}" == "AIX" ) then
+  if ( "${BITMODE}" == "32" ) then
+    setenv LIBPATH     "${THE_ADDED_SH_PATH}:${ORACLE_LIB32}:/usr/lib:/usr/local/lib"
+  endif
+  if ( "${BITMODE}" == "64" ) then
+    setenv LIBPATH     "${THE_ADDED_SH_PATH}:${ORACLE_LIB}:/usr/lib:/usr/local64/lib"
+  endif
+endif
+
+unsetenv THE_ADDED_SH_PATH
+###############################################################################
+### Set performance tool variables                                           ##
+### PERFORMANCE_TOOL = purify/quantify/insure                                ##
+##########################i####################################################
+if ( "${?PERFORMANCE_TOOL}" ) then
+setenv USE_TTEN_DEBUG_LIB     Y
+setenv USER_DEFINED_TTEN_LIB  ttenD
+
+  if ( "${PERFORMANCE_TOOL}" == "purify" ) then 
+    if ( -r ${RATIONAL_HOME}/purifyplus_setup.csh ) then
+      source  ${RATIONAL_HOME}/purifyplus_setup.csh
+    else
+	echo purifyplus_setup.csh not found.  Purify not configured.
+    endif
+  endif
+        
+  if ( "${PERFORMANCE_TOOL}" == "quantify" ) then
+	if ( -r ${RATIONAL_HOME}/purifyplus_setup.csh ) then
+	  source  ${RATIONAL_HOME}/purifyplus_setup.csh
+	else
+	  echo purifyplus_setup.csh not found.  Quantify not configured.
+	endif
+  endif
+
+  if ( "${PERFORMANCE_TOOL}" == "insure" ) then 
+    setenv PATH ${INSURE_BIN}:$PATH
+    setenv SHLIB_PATH ${INSURE_LIB}:$SHLIB_PATH
+    setenv LD_LIBRARY_PATH ${INSURE_LIB}:$LD_LIBRARY_PATH
+  endif
+endif 
+
+###############################################################################
+### Script for customization setup
+### IMPORTANT: Keep the lines always last in the file
+###############################################################################
+if ( -r ${CCPROJECTHOME}/product/${CCPRODUCT}/${CCPRODUCTVER}/config/.product.cust.setup ) \
+    source ${CCPROJECTHOME}/product/${CCPRODUCT}/${CCPRODUCTVER}/config/.product.cust.setup

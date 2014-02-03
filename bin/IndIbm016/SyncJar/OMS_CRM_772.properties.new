@@ -1,0 +1,19 @@
+#1)Source_app:2)Target_app:3)File_name:4)Src_location:5)Target_XC_usr:6)Target_XC_PW:7)Broker_name:8)Target_view_path:9)PBA_flag:10)mail
+oms:crm:OrderingClient.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:OrderingClientCust.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:WASAmdocsOmsServicesEjbDesc.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsOrderingCihDataTypes.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsOrderingCihSpnLayer.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsOrderingCihClientKit.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4js t1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsOmsServices.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsCihClientKit.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsCihSpnLayer.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsSvcCommon.jar:${HOME}/proj/gord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:client.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsAif.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsCore.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:AmdocsProcMgrBase.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:acfglib.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:jaxen-1.1-beta-9.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+oms:crm:jdom.jar:${HOME}/proj/c9ord${CCPRODVERNUM}${CCVARIANT_DELIMITER}${CCVARIANT}/lib:mb_ccjst:Ccm4jst1!:hpbl803/jst:ccrm3Configuration/oms:1:drorbr@amdocs.com
+

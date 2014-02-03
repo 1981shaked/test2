@@ -1,0 +1,55 @@
+###############################################################
+#!usr/local/bin/tcsh -f                                       #
+#                                                             #
+# File Name:ccCleanLog                                        #
+#                                                             #
+# Purpose:Clean All Log files by using a configuration file   #
+# that located under $HOME/Clean/ with name DirList.          #
+# The configuration file include all the directories that need#
+# to be clean from logs. 				      #        	
+#                                                             #
+# Usage : Clean_Log_File  <Number of days back>               #
+#                                                             #
+# Date: 30/11/2008                                            #
+#                                                             #
+# Autor: Eyal Arazi                                           #
+#                                                             #
+###############################################################
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+
+set Config_File = "$HOME/Clean/DirList"
+set Days = $1
+set LogDir = "$HOME/log/ccCleanLog"
+set LogName = Clean_log.`timestamp`
+if (! -d $LogDir) then
+        mkdir $LogDir
+endif
+touch $LogDir/$LogName
+
+if ($#argv != 1) then
+	echo "Usage : $0:t <Number of days Back>"
+	echo "e.g. : $0:t 10"
+	exit
+endif
+
+if (! -f $Config_File) then
+	echo "\nThe Confugreation file $Config_File is missing\n" 
+	exit
+endif
+foreach Dir (`cat $Config_File`)
+	if ( ! -d $Dir 	) then
+		echo "\nThe directory $Dir dosn't exsit\n" >> $LogDir/$LogName
+	else
+		echo "\nClean Directory $Dir\n" >> $LogDir/$LogName
+		find $Dir/* -type f -name "*log*" -mtime +$Days | xargs rm -f >> $LogDir/$LogName 
+		find $Dir/* -type f -name "*crontab*" -mtime +$Days | xargs rm -f >> $LogDir/$LogName
+		find $Dir/* -type f -name "*Promote*" -mtime +$Days | xargs rm -f >> $LogDir/$LogName 
+		find $Dir/* -type f -name "*rep*" -mtime +$Days | xargs rm -f >> $LogDir/$LogName 
+	endif
+end

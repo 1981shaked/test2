@@ -1,0 +1,103 @@
+#!/usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+#=======
+# Usage
+#=======
+if ($#argv != 2) then
+   echo "Usage: `basename ${0}` <version> <3 digit version number>"
+   echo "Example: `basename ${0}` oms 753 "
+   exit (1)
+endif
+
+
+set PROD = $1
+set VVER = v"$2"
+set VERTMP = `echo $VVER | cut -c 1-3`
+set VERTMP2 = `echo $VVER | cut -c 4`
+set VVE_R = `echo $VERTMP"_"$VERTMP2`
+
+
+#Build number +1
+$HARVESTDIR/bin/refresh -B -machine $HOST -pd $1 -v $2
+
+
+#====================
+# Set build number
+#====================
+setenv build_number `buildCounter ${MASTER_TYPE} ${2} 0 | awk '{print $4}'`
+echo "build_number is : ${build_number}"
+
+#Mail ini #####################
+
+
+set ts=`timestamp`
+echo $ts
+set mail_dir="~/bin/mail"
+set mail_file="~/bin/mail/mail_${ts}"
+mkdir -p $mail_dir
+set mail_list = ( drorbr@amdocs.com,TELUSSDSEOMSdevelopmentDVC@int.amdocs.com)
+#set mail_list = ( drorbr@amdocs.com )
+
+###############################
+
+#=====================
+#Send start build mail
+#=====================
+
+rm -f $mail_file
+touch $mail_file
+echo "Hi all," >> $mail_file
+echo Claro $CCPRODTYPE $VVER build ${build_number} started on $HOST 
+echo "Claro $CCPRODTYPE $VVER build ${build_number} started on $HOST"  >> $mail_file
+echo  "  " >> $mail_file
+echo "Last Tasks List are :" >> $mail_file
+#cat `ls -lrt ~/CCMSS/oms/v${2}/64OG/UMB/*tasks_details.txt* | tail -1 | awk '{print $9}'` >> $mail_file
+echo  "  " >> $mail_file
+echo "Thanks," >> $mail_file
+echo "Claro CC Team" >> $mail_file
+#cat $mail_file | mailx -r "Claro CC" -s "Claro $CCPRODTYPE v$2 build  #${build_number}  started " $mail_list
+########################################################
+
+echo going to remove the sources  now ....
+\rm -rf $HOME/bb/cord9*/${VVE_R}
+
+
+echo going to run hupdatefs.....
+hupdateFileSystem -l PRODUCTVER -p ${CCPRODUCT} -r v${2} -va "64OG"
+
+
+echo going to run refresh ......
+$HARVESTDIR/bin/refresh  -XML -execute -machine $HOST -pd $1  -v $2
+$HARVESTDIR/bin/refresh -XML -machine $HOST -pd $1 -v $2 -dnum 10 -execute
+
+\cp -f /clrhome/clr/ccclr/mb_ccclr/bb/gord1core/${VVE_R}/lib/AmdocsCihDatatypes.jar /clrhome/clr/ccclr/mb_ccclr/bb/gord1core/${VVE_R}/lib/AmdocsCihDataTypes.jar
+
+
+
+
+echo "going to link .setting ==> _setting ...."
+
+cd $HOME/bb/cord9utilities/${VVE_R}/EclipseProjects/integration
+ln -s _settings .settings
+
+cd $HOME/bb/cord9utilities/${VVE_R}/EclipseProjects/oms_adt
+ln -s _settings .settings
+
+cd $HOME/bb/cord9utilities/${VVE_R}/EclipseProjects/oms_aif_project
+ln -s _settings .settings
+
+cd $HOME/bb/cord9utilities/${VVE_R}/EclipseProjects/claro_aif_project
+ln -s _settings .settings
+
+
+
+#echo "Run Promote from B to BA , Run promote BN, Run Refresh"
+#$HOME/bin/run_Promote oms 753 64Og
+#$HOME/bin/run_Promote $1 $2 64OG
+
+
+echo "Going to Run the Build now ..."
+#/sdkhome/sdk/SDKRoot/OMS753/tools/build/bin/hbuild_product -n oms -v v753 -t 64OG -b Module -DB -ob -SM -SW Module -AsItIs
+/sdkhome/sdk/SDKRoot/OMS${2}/tools/build/bin/hbuild_product -n $1 -v v${2} -t 64OG -b Module -DB -ob -SM -SW Module -AsItIs

@@ -1,0 +1,34 @@
+#!/usr/local/bin/tcsh -f
+
+#by Juliat
+
+if( $#argv < 2) then
+        echo "\tUsage: $0 <BB_name> <version> [Var]"
+        echo "\tExample: $0 ccm7e v592"
+ 	echo "\t         $0 ccm7e v592 64"
+        exit(1)
+endif
+
+rm -f ~/tmp/set_bb.tmp
+set bb_name=$1
+set ver = `echo $2|tr -d "v"|tr -d "_"`
+
+if( $#argv == 3) then
+	set Var = $3
+	echo "Trying to find: ~/proj/*${ver}V${Var}/$bb_name"
+	grep -l $bb_name ~/proj/*${ver}V${Var}/proj_profile>~/tmp/set_bb.tmp
+else
+	echo "Trying to find: ~/proj/*${ver}/$bb_name"
+	ls -ld ~/proj/*${ver}/$bb_name  >~/tmp/set_bb.tmp
+
+endif
+
+cat ~/tmp/set_bb.tmp
+set proj_name = `cat ~/tmp/set_bb.tmp|grep -v back_|tail -1 | tr -s "/" "\n" | tail -2 |head -1`
+echo "Project: $proj_name"
+echo "do_sp $proj_name $bb_name"
+
+#do_set_prod_script $proj_name $bb_name
+
+rm -f ~/tmp/set_bb.tmp
+

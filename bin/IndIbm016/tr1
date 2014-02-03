@@ -1,0 +1,32 @@
+#!/usr/local/bin/tcsh
+
+
+set PROD = $1
+set VVER = v"$2"
+set VERTMP = `echo $VVER | cut -c 1-3`
+set VERTMP2 = `echo $VVER | cut -c 4`
+set VVE_R = `echo $VERTMP"_"$VERTMP2`
+setenv build_number `buildCounter ${MASTER_TYPE} ${2} 0 | awk '{print $4}'`
+set ts=`timestamp`
+set mail_dir="~/bin/mail"
+set mail_file="~/bin/mail/mail_${ts}"
+#set mail_list = ( drorbr@amdocs.com,TELUSSDSEOMSdevelopmentDVC@int.amdocs.com)
+set mail_list = ( drorbr@amdocs.com)
+echo "going to link .setting ==> _setting ...."
+set mail_dir="~/bin/mail"
+set mail_file="~/bin/mail/mail_${ts}"
+mkdir -p $mail_dir
+#set mail_list = ( drorbr@amdocs.com,TELUSSDSEOMSdevelopmentDVC@int.amdocs.com)
+set mail_list = ( drorbr@amdocs.com)
+#Send start build mail
+rm -f $mail_file
+touch $mail_file
+echo "Hi all," >> $mail_file
+echo "Claro $CCPRODTYPE v${2} build ${build_number} started on $HOST"  >> $mail_file
+echo  "  " >> $mail_file
+echo "Last Tasks List are :" >> $mail_file
+cat `ls -lrt ~/CCMSS/oms/v800/64OG/UMB/*tasks_details.txt* | tail -1 | awk '{print $9}'` >> $mail_file
+echo  "  " >> $mail_file
+echo "Thanks," >> $mail_file
+echo "Claro CC Team" >> $mail_file
+cat $mail_file | mailx -r "Claro CC" -s "Claro $CCPRODTYPE v$2 build  #${build_number}  started " $mail_list

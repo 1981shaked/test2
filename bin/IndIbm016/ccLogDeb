@@ -1,0 +1,412 @@
+#!/usr/bin/ksh
+
+#
+#==========================================================================
+#
+# Name:        ccLogDeb 
+#
+# Description:  Generate the build report with errors and warnings
+#
+# Assumptions:  1.
+#               2.
+#               3.
+#               4.
+#
+# Dependencies (files and scripts):	1. show_str.pl
+#					2. cctxt2xls.pl
+#
+# Author:            Manish Panjwani 
+# Supervisor : Priyadarshini Jois Samagod/Zeenat Alam
+#
+# Update:  date:        User:           Purpose:
+# Update:  date:        User:           Purpose:
+#
+
+#==========================================================================
+# S U B R O U T I N E S
+#==========================================================================
+# Usage Subroutine:
+
+Usage ()
+{
+  echo "\nUsage:   ccLogDeb -h  to display this help message "
+  echo "          -P <product name>  -v <version name> -m <mail id> | "
+  echo "          -M <module name> -v <version name> -m <mail id> | "
+  echo "          -p <project> / -b <bb name> -v <version name> -m <mail id> | "
+  echo "          -logname <Absolute path of the log file with the name> -m <mail id> | "
+  echo "          -l <Absolute path of the Directory which contains Logs> -m <mail id> " 
+  echo "          -config <If you want the pattern in this file to be searched instead of default "expected_terms">"
+  echo "          -t <variant> "
+  echo " For Example - ccLogDeb -P dgf -v v11_0 -m manishp@amdocs.com"
+  echo " "
+exit 1
+}
+
+#=============================================================================
+
+# Function to filter errors and warnings at product, module, project and bb level:
+  
+filterforprodmodproj()
+{		
+ touch $HOME/tmp/nullfile
+$CCPROJECTHOME/bin/show_str.pl $parametersforshowstr > $CCPROJECTHOME/tmp/showstrout.$Timestamp 2>&1 
+  if [ $? = 0 -a -s "$CCPROJECTHOME/tmp/showstrout.$Timestamp" ] ; then #Test that show_str.pl passed
+   for line1 in `cat $CCPROJECTHOME/tmp/showstrout.$Timestamp`
+     do
+       if [ "$line1" = Error: -o "$line1" = open -o "$line1" = exist ] ; then
+        echo "Please check that product name , module name , project name , variant are correct"
+        echo "show_str.pl failed , Please check $CCPROJECTHOME/tmp/showstrout.$Timestamp for details"
+        Usage
+       fi
+     done
+   continue
+   else
+   echo "Please check that product name , module name , project name , variant are correct"
+   echo "show_str.pl failed , Please check $CCPROJECTHOME/tmp/showstrout.$Timestamp for details"
+   Usage
+   fi
+
+printf "\n%-10s|%-10s|%-10s| %-15s|  %-59s| %-10s\n" "Type" "Project" "BB" "Number" "Description" "Sum" >> $Reportfileloc	 
+   for proj in `$CCPROJECTHOME/bin/show_str.pl $parametersforshowstr | cut -d ":" -f4 | sort | uniq` 
+    do
+      if [ -n "$bbname" ] ; then
+	proj1="$proj:$bbname:"
+      else
+	proj1="$proj"
+      fi
+     $CCPROJECTHOME/bin/show_str.pl $parametersforshowstr | grep $proj1 > $CCPROJECTHOME/tmp/showstrout2.$Timestamp 2>&1
+      if [ $? != 0 ] ; then
+	echo "Please check that product name , module name , project name , bb name, variant are correct"
+	Usage
+      fi		
+     rm -rf  $CCPROJECTHOME/tmp/showstrout2.$Timestamp	
+     for bb in `$CCPROJECTHOME/bin/show_str.pl $parametersforshowstr | grep $proj1 | cut -d ":" -f5 | sort | uniq`
+      do
+	export Last_build_log=`ls -rtl ~/log.$proj/log.$bb/ |grep build.log | tail -1 | awk '{print $9}'`
+	 if [ -z "$Last_build_log" ] ; then
+	  printf "\n%-9s | % -10s" "LOG FILE:" "Unable to locate any file with name build.log under ~/log.$proj/log.$bb/" >> $Reportfileloc
+	  printf "\n%-9s | % -10s\n" "" "Please check that the file is present with the name build.log * and has read permissions" >> $Reportfileloc
+	  continue 
+	 fi
+	export line2=ERROR:
+	#printf "\n%-10s | % -10s \n" "LOG FILE:" "~/log.$proj/log.$bb"/"$Last_build_log" >> $Reportfileloc
+	  while read line  
+            do
+	      if [ -n "$line" -a "$line" != default ] ; then
+		less $configfile | egrep '^[A-Z]+:' | grep "$line" > $HOME/tmp/nullfile 
+		if [ $? = 0 ] ; then
+		export line1=$line	
+                fi		
+              fi
+               if [ "$line" = WARNING: ] ; then
+		export line2=WARNING:
+		fi  
+		if [ "$line2" = ERROR: -a "$line1" != ERROR: -a -n "$line" -a "$line1" != "$line" ] ; then
+ 			egrep "$line" ~/log.$proj/log.$bb/$Last_build_log | sort |uniq -c | tr -s " " | sort -n | sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{printf"%-10s|%-10s|%-10s|%-16s|  %-59s|%-10s\n",line1,proj,bb,"",$2,$1}'  >> $Reportfileloc
+ 		fi
+		if [ "$line2" = ERROR: -a "$line1" = ERROR: -a -n "$line" ] ; then
+		  if [ "$line" = default ] ; then
+                    egrep -i "( error| errors\.|rror:)" ~/log.$proj/log.$bb/$Last_build_log | sort | uniq -c | sort -n | tr -s " " | sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{printf"%-10s|%-10s|%-10s|%-16s|  %-59s|%-10s\n",line1,proj,bb,"",$2,$1}' >> $Reportfileloc 
+		  fi
+                   if [ "$line" != default -a "$line" != ERROR: ] ; then
+    		    egrep "$line" ~/log.$proj/log.$bb/$Last_build_log | sort |uniq -c | tr -s " " | sort -n | sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{printf"%-10s|%-10s|%-10s|%-16s|  %-59s|%-10s\n",line1,proj,bb,"",$2,$1}'  >> $Reportfileloc 
+                   fi 
+		fi
+		if [ "$line2" = WARNING: -a "$line1" = WARNING: -a -n "$line" ] ; then
+		  if [ "$line" = default ] ; then  
+		 egrep -i 'warning [#]*[0-9][0-9]*[-A-Z]*:' ~/log.$proj/log.$bb/$Last_build_log | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s|%-10s|%-10s|%2s|%40s| %-10s\n",line1,proj,bb,var,des[var],arr[var]} }'| sort -t "|" -n -k 4,4 >> $Reportfileloc 
+
+		  fi
+ 		  if [ "$line" != default -a "$line" != WARNING: ] ; then
+ 	         egrep -i "warning $line:"  ~/log.$proj/log.$bb/$Last_build_log | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s|%-10s|%-10s|%2s|%40s| %-10s\n",line1,proj,bb,var,des[var],arr[var]} }'| sort -t "|" -n -k 4,4 >> $Reportfileloc 
+ 		  fi
+		fi
+		if [ "$line2" = WARNING: -a "$line1" != WARNING: -a -n "$line" ] ; then
+			export line4=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' `
+			export line3=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' | tr [A-Z] [a-z] | sed 's/ //g'`
+		   if [ "$line" = default ] ; then
+			egrep -i "$line3 [#]*[0-9][0-9]*[-A-Z]*:" ~/log.$proj/log.$bb/$Last_build_log | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s|%-10s|%-10s|%2s|%40s| %-10s\n",line1,proj,bb,var,des[var],arr[var]} }'| sort -t "|" -n -k 4,4 >> $Reportfileloc
+		   fi
+		   if [ "$line" != default -a "$line" != "$line4:" ] ; then
+		egrep -i "$line3 $line:"  ~/log.$proj/log.$bb/$Last_build_log | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v bb="$bb" -v proj="$proj" '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s|%-10s|%-10s|%2s|%40s| %-10s\n",line1,proj,bb,var,des[var],arr[var]} }'| sort -t "|" -n -k 4,4 >> $Reportfileloc
+		   fi
+	
+fi
+            done < $configfile
+	done
+done
+rm -f $HOME/tmp/nullfile
+}
+
+# Function to filter errors and warnings from a partcular log file
+
+filterforspecificlogfile()
+{
+touch $HOME/tmp/nullfile
+printf "%-10s |%-16s|   %-59s|%-7s |%-20s\n" "Type" "Number" "Description" "Sum" "Filename" >> $Reportfileloc
+export line2=ERROR:
+  while read line
+   do
+ 	if [ -n "$line" -a "$line" != default ] ; then
+	    less $configfile | egrep '^[A-Z]+:' | grep "$line" > $HOME/tmp/nullfile
+  	   if [ $? = 0 ] ; then
+             export line1=$line
+           fi
+        fi
+        if [ "$line" = WARNING: ] ; then
+            export line2=WARNING:
+        fi
+        if [ "$line2" = ERROR: -a "$line1" != ERROR: -a -n "$line" -a "$line1" != "$line" ] ; then
+	     egrep "$line" $logname | sort |uniq -c | tr -s " " | sort -n | sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v logname="$logname" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,logname}' >> $Reportfileloc
+        fi
+	if [ "$line2" = ERROR: -a "$line1" = ERROR: -a -n "$line" ] ; then
+	  if [ "$line" = default ] ; then
+ 	     egrep -i "( error| errors\.|rror:)" $logname |sort | uniq -c | tr -s " " | sort -n |sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v logname="$logname" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,logname}' >> $Reportfileloc
+	  fi
+	  if [ "$line" != default -a "$line" != ERROR: ] ; then
+	    egrep "$line" $logname |sort | uniq -c | tr -s " " | sort -n |sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v logname="$logname" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,logname}' >> $Reportfileloc
+ 	  fi
+ 	fi
+	if [ "$line2" = WARNING: -a "$line1" = WARNING: -a -n "$line" ] ; then
+	  if [ "$line" = default ] ; then
+   	    egrep -i 'warning [#]*[0-9][0-9]*[-A-Z]*:' $logname | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v logname="$logname"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],logname} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc 
+	  fi
+	  if [ "$line" != default -a "$line" != WARNING: ] ; then
+	     egrep -i "warning $line:" $logname | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v logname="$logname"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],logname} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	 fi
+	fi	
+	if [ "$line2" = WARNING: -a "$line1" != WARNING: -a -n "$line" ] ; then
+	    export line4=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' `
+	    export line3=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' | tr [A-Z] [a-z] | sed 's/ //g'`
+	  if [ "$line" = default ] ; then
+ 	      egrep -i "$line3 [#]*[0-9][0-9]*[-A-Z]*:"  $logname | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v logname="$logname"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],logname} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	  fi
+	  if [ "$line" != default -a "$line" != "$line4:" ] ; then
+		egrep -i "$line3 $line:"  $logname | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk-F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v logname="$logname"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],logname} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	  fi
+	fi
+	
+  done < $configfile
+rm -f $HOME/tmp/nullfile
+}
+
+# Function to filter errors and warnings from all files present in the particular directory
+
+filterfordirect()
+{
+touch $HOME/tmp/nullfile
+testforfile=`ls -lrt $abspathdir | awk '{print $9}'` #Variable used to check that files is present in the input directory
+  if [  -z "$testforfile" ] ; then
+    echo "Please check that there are files present and have read permissions"
+    Usage
+  fi 
+printf "%-10s |%-16s|   %-59s|%-7s |%-20s\n" "Type" "Number" "Description" "Sum" "Filename" >> $Reportfileloc
+  for eachfile in `ls -lrt $abspathdir | awk '{print $9}'`
+    do
+	export line2=ERROR:
+	while read line
+          do
+            if [ -n "$line" -a "$line" != default ] ; then
+		less $configfile | egrep '^[A-Z]+:' | grep "$line" > $HOME/tmp/nullfile 
+	       if [ $? = 0 ] ; then
+		export line1=$line
+	       fi
+  	    fi	
+	    if [ "$line" = WARNING: ] ; then
+		export line2=WARNING:
+	    fi
+	    if [ "$line2" = ERROR: -a "$line1" != ERROR: -a -n "$line" -a "$line1" != "$line" -a "$line" != default ] ; then
+	   egrep "$line" $abspathdir/$eachfile |sort | uniq -c | tr -s " " | sort -n |sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v abspathdir=$abspathdir -v eachfile="$eachfile" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,abspathdir"\/"eachfile}' >> $Reportfileloc 
+	    fi
+	    if [ "$line2" = ERROR: -a "$line1" = ERROR: -a -n "$line" ] ; then
+              if [ "$line" = default ] ; then
+        egrep -i "( error| errors\.|rror:)" $abspathdir/$eachfile |sort | uniq -c | tr -s " " | sort -n |sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v abspathdir=$abspathdir -v eachfile="$eachfile" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,abspathdir"\/"eachfile}' >> $Reportfileloc
+              fi 
+              if [ "$line" != default -a "$line" != ERROR: ] ; then
+          egrep "$line" $abspathdir/$eachfile |sort | uniq -c | tr -s " " | sort -n |sed 's/^ [[:digit:]]* /&\|/' | awk -F"|" -v line1="$line1" -v abspathdir=$abspathdir -v eachfile="$eachfile" '{printf"%-10s |%-16s|   %-59s|%-7s |%-20s\n",line1,"",$2,$1,abspathdir"\/"eachfile}' >> $Reportfileloc
+              fi
+           fi
+ 	   if [ "$line2" = WARNING: -a "$line1" = WARNING: -a -n "$line" ] ; then
+	      if [ "$line" = default ] ; then
+          egrep -i 'warning [#]*[0-9][0-9]*[-A-Z]*:' $abspathdir/$eachfile | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v abspathdir="$abspathdir" -v eachfile="$eachfile"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],abspathdir"\/"eachfile} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	     fi
+  	     if [ "$line" != default -a "$line" != WARNING: ] ; then
+	  egrep -i "warning $line:" $abspathdir/$eachfile | sed 's/[Ww]arning #*[[:digit:]]*-*D*:/\|&\|/' | sed 's/^.*|[Ww]arning//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/' | awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n  | awk -F "\|" -v line1="$line1" -v abspathdir="$abspathdir" -v eachfile="$eachfile"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],abspathdir"\/"eachfile} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	    fi
+         fi 	
+	 if [ "$line2" = WARNING: -a "$line1" != WARNING: -a -n "$line" ] ; then
+               export line4=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' `
+		export line3=`less $configfile | grep : | grep $line1 | sort | uniq | sed 's/://' |sed 's/ //g' | tr [A-Z] [a-z] | sed 's/ //g'`
+	   if [ "$line" = default ] ; then
+egrep -i "$line3 [#]*[0-9][0-9]*[-A-Z]*:" $abspathdir/$eachfile | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v abspathdir="$abspathdir" -v eachfile="$eachfile"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],abspathdir"\/"eachfile} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+	   fi
+	   if [ "$line" != default -a "$line" != "$line4:" ] ; then
+egrep -i "$line3 $line:"  $logname | tr $line4 $line3 | sed 's/'${line3}' #*[[:digit:]]*[-A-Z]*:/\|&\|/' | sed 's/^.*|'${line3}'//' | sort | uniq -c | sort -n | tr -s " " | sed 's/^ *[[:digit:]]*/&\|/'| awk -F"|" '{ printf"%-15s | %-60s| %-10s\n",$2,$3,$1 }' | sort -n | awk -F "\|" -v line1="$line1" -v abspathdir="$abspathdir" -v eachfile="$eachfile"  '{arr[$1]=arr[$1]+$3;des[$1]=$2} END {for(var in arr) {printf"%-10s |%-10s| %-49s| %-7s|%-20s\n",line1,var,des[var],arr[var],abspathdir"\/"eachfile} }'| sort -t "|" -n -k 2,2 >> $Reportfileloc
+ 	   fi
+	fi
+	done < $configfile
+  done
+rm -f $HOME/tmp/nullfile
+}		
+
+
+#==========================================================================
+# Script begins here
+#==========================================================================
+export defaultconfigfile=$HOME/bin/expected_terms  #for the default location of configuration file
+export parametersforshowstr=""                              #for parameters to be passed to show_str.pl script  
+export prodname=""                                          #for product name
+export modulename=""                                        #for module name
+export variant=""                                           #for variant name
+export version=""                                           #for version name
+export logname=""                                           #for a particular log file name   
+export projname=""                                          #for Project name 
+export bbname=""                                            #for Building Block name
+export mailid=""                                            #for Mail id 
+export abspathdir=""                                        #for absolute path of the directory where logs are kept  
+export Reportfileloc=$HOME/tmp/report_file                  #for default report file
+export configfile=$defaultconfigfile 
+
+if [ $# -le 2 -o `expr $# % 2` -eq 1 ] ; then  
+Usage
+fi
+
+if [ ! -d "$HOME/tmp" -a ! -d "$HOME/log" ] ; then
+echo "Please check that tmp and log directory exist under $HOME "
+Usage
+fi 
+  
+Timestamp=`timestamp`
+
+#Switch case for the inputs
+
+while  [ $# != 0 ]
+do
+    case $1 in
+        "-P") export prodname=$2
+              shift ; shift
+              ;;
+        "-M") export modulename=$2
+              shift ; shift
+              ;;
+        "-p") export projname=$2
+              shift ; shift
+              ;;
+        "-b") export bbname=$2
+              shift ; shift
+              ;;
+        "-t") export variant=$2
+              shift ; shift
+              ;;
+        "-v") export version=$2
+              shift ; shift
+	      ;;
+        "-logname") export logname=$2
+              shift ; shift
+              ;;
+        "-l") export abspathdir=$2
+              shift ; shift
+              ;;
+        "-config") export configfile=$2
+              shift ; shift
+              ;;
+        "-m") export mailid=$2
+              shift ; shift
+              ;;
+        *)  echo "Unknown argument: \"$1\""
+              Usage
+              exit 1
+              ;;
+    esac
+
+
+if [ $? != 0 ] ; then
+echo $2
+echo "Please mention correct paramerts"
+Usage
+fi 
+
+done
+
+if [ -n "$logname" -a ! -r "$logname" ] ; then   		#if condition to check that input log file exist
+echo "Please check that log file exist at mentioned location"
+Usage
+fi 
+
+if [ -n "$abspathdir" -a ! -d "$abspathdir" ] ; then		#if condition to check that input directory exist
+echo "Please check that the directory path is correct"
+Usage
+fi
+
+if [ ! -r "$configfile" ] ; then				#if condition to check that input configuration file exist
+echo "Please check that configuration file name and path are correct and default configuration file is under $CCPROJECTHOME/bin with the name \"expected_terms\""
+Usage
+fi
+
+rm -rf "$Reportfileloc"
+touch "$Reportfileloc"
+
+#Condition when Product name , Version , mail id are given as inputs 
+if [ -n "$prodname" -a -n "$version" -a -n "$mailid" -a -z "$modulename" -a -z "$projname" -a -z "$bbname" -a -z "$logname" -a -z "$abspathdir" ] ; then
+	if [ -n "$variant" ] ; then
+	export prodname="$prodname -t $variant"
+	fi
+export parametersforshowstr="-P $prodname -v $version" 
+filterforprodmodproj
+
+#Condition when Module name , Version , mail id are given as inputs
+elif [ -n "$modulename" -a -n "$version" -a -n "$mailid" -a -z "$prodname" -a -z "$projname" -a -z "$bbname" -a -z "$logname" -a -z "$abspathdir" ] ; then
+	if [ -n "$variant" ] ; then
+	export modulename="$modulename -t $variant"
+	fi
+export parametersforshowstr="-M $modulename -v $version"
+filterforprodmodproj
+
+#Condition when Project name , Version , mail id are given as inputs
+elif [ -n "$projname" -a -n "$version" -a -n "$mailid" -a -z "$prodname" -a -z "$modulename" -a -z "$bbname" -a -z "$logname" -a -z "$abspathdir" ] ; then
+	if [ -n "$variant" ] ; then
+	export projname="$projname -t $variant"
+	fi
+export parametersforshowstr="-p $projname -v $version"
+filterforprodmodproj
+
+#Condition when Project name ,BB name , Version , mail id are given as inputs
+elif [ -n "$projname" -a -n "$bbname" -a -n "$version" -a -n "$mailid" -a -z "$prodname" -a -z "$modulename" -a -z "$logname" -a -z "$abspathdir" ] ; then
+ 	if [ -n "$variant" ] ; then
+	export projname="$projname -t $variant"
+	fi
+export parametersforshowstr="-p $projname -v $version"
+filterforprodmodproj
+  
+#Condition when Log file name , mail id are given as inputs
+elif [ -n "$logname" -a -n "$mailid" -a -z "$prodname" -a -z "$modulename" -a -z "$projname" -a -z "$bbname" -a -z "$version" -a -z "$abspathdir" ] ; then
+filterforspecificlogfile
+
+#Condition when Directory name with absolute path and mail id are given as inputs
+elif [ -n "$abspathdir" -a -n "$mailid" -a -z "$logname" -a -z "$prodname" -a -z "$modulename" -a -z "$projname" -a -z "$bbname" -a -z "$version" ] ; then
+filterfordirect
+
+else 
+echo "Correct Usage" 
+Usage
+
+fi
+
+cp -rf "$Reportfileloc" $HOME/log/build.report.$Timestamp
+
+$CCPROJECTHOME/bin/cctxt2xls.pl -f $HOME/log/build.report.$Timestamp -d "\|" -o $HOME/log/output.$Timestamp.xls > $HOME/tmp/cctxt2output.$Timestamp 2>&1
+
+#Condition to check that cctxt2xls.pl failed or not
+if [ $? -ne 0 ] ; then
+echo "cctxt2xls.pl failed, Please check that \"cctxt2xls.pl\" is under \"$CCPROJECTHOME/bin/\" for details check $HOME/tmp/cctxt2output.$Timestamp"
+echo "Report is at $HOME/log/build.report.$Timestamp"
+Usage
+fi
+rm -rf $HOME/tmp/cctxt2output.$Timestamp
+
+#For mailing the build report to the given input mail id
+( cat $HOME/log/build.report.$Timestamp  ; cat $HOME/log/output.$Timestamp.xls | uuencode $HOME/log/output.$Timestamp.xls ) | mailx -m -s "Build Error Report" $mailid 
+
+echo "Report is at $HOME/log/build.report.$Timestamp"
+
+

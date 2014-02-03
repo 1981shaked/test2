@@ -1,0 +1,114 @@
+#!/bin/ksh
+
+#=====================================================================================================
+# Status of the account
+#
+# Author: Olimpiu Scheau - on 18 Feb 2002.
+# Improved by Roni Korchi for SBC  eCare on March 2005.
+# Improved by Dror Baruch for LS   on March 2008.
+# Improved by Dror Baruch for CTL   on March 2009.
+#=====================================================================================================
+
+# General 
+LINE_LENGTH=70
+text_bold=`tput bold`
+text_reset=`tput sgr0`
+text_rev=`tput rev`
+
+#---------------------------------------
+#  print_separator( char separator_char )
+#
+#     print a separator line with the given char, and with the LINE_LENGTH length
+#----------------------------------------
+function print_separator {
+	if [[ $# -eq 1 ]]; then
+		case $1 in
+        		'1')
+				printf "${text_rev}%70s${text_reset}\n" " "
+          			;;
+		        '2')
+				printf "${text_rev} ${text_reset}%68s${text_rev} ${text_reset}\n" " "
+          			;;
+        		'3')
+				cur_char=0
+			        sep_line="_"
+			        while [ cur_char -le 66 ];
+		                do
+                			sep_line=${sep_line}"_"
+			                cur_char=$cur_char+1;
+			        done
+				printf "${text_rev} ${text_reset}%68s${text_rev} ${text_reset}\n" ${sep_line}
+          			;;
+		esac
+	fi
+}
+
+
+
+function print_head {
+	if [[ $# -eq 0 ]]; then
+		printf "${text_rev}      ATT CC ACCOUNT DETAILES BASE ON LAST set_proj%-18s ${text_reset}\n"
+	fi
+	if [[ $# -eq 1 ]]; then
+		printf "${text_rev}  %-25s v%-5s            %15s account ${text_reset}\n" "$1" "${TLG_VERSION}" "${TLG_ENV_TYPE}"
+	fi
+	if [[ $# -eq 2 ]]; then
+		printf "${text_rev}  %-25s %-5s             %15s account ${text_reset}\n" "$1" "$2" "${TLG_ENV_TYPE}"
+	fi
+}
+
+#---------------------------------------
+#  print_var( string part1, string part2, ..., string partN )
+#
+#     print the value of a variable
+#---------------------------------------
+function print_var {
+	if [[ $# -eq 3 ]]; then
+		printf "${text_rev} ${text_reset} %-10s %-9s: ${text_bold}%-44s ${text_reset}${text_rev} ${text_reset}\n" "$1" "$2" "$3"
+	fi
+	if [[ $# -eq 2 ]]; then
+		printf "${text_rev} ${text_reset} %-20s: ${text_bold}%-44s ${text_reset}${text_rev} ${text_reset}\n" "$1" "$2"
+	fi
+}
+
+port_base=10000
+
+let env_port_base=${port_base}+(${ENV_NUM}-1)*50
+let WAS_APP_PORT=${env_port_base}+0
+let WAS_PORT=${env_port_base}+1
+let WAS_APP_SSL_PORT=${env_port_base}+2
+let WAS_SSL_PORT=${env_port_base}+3
+let BOOTSTRAP_ADDRESS=${env_port_base}+4
+let WAS_SOAP_PORT=${env_port_base}+5
+let ACS_SOAP_PORT=${env_port_base}+20
+let WAS_DEBUG_PORT=${env_port_base}+17
+
+
+echo " "
+#print_separator 1
+print_head $1 $2
+#print_separator 1
+print_separator 2
+print_var "Unix account" "${LOGNAME}@`uname -n` (`uname -s` `uname -r`)"
+print_var "Arch. type" ${ARCH}
+print_var "HOST" ${HOST}
+#print_var "JAVA_HOME" ${JAVA_HOME}
+print_var "C/C++  Dev" `/usr/sbin/swlist -l product | grep -i c++|grep ACXX| awk '{print $2}'`
+print_var "C/C++  Runtime" `/usr/sbin/swlist -l product | grep -i c++ | grep Runtime | awk '{print $6}'`
+print_var "WAS_HOME" ${WAS_HOME}
+print_var "ORACLE_HOME" ${ORACLE_HOME}
+print_var "ANT_HOME" ${ANT_HOME}
+print_var "BROKERNAME" ${BROKERNAME}
+print_var "COBOL" ${COBDIR}
+print_var "FOCUS" ${FOCUS}
+print_var "FAST UNLOAD" ${PLAT_HOME}
+print_var "CORE RELEASE" ${CORE_RELEASE}
+print_var "PROJ is" ${CCPROJ}
+print_var "BB is " ${CCBB}
+print_var "CC home directory" ${CCPROJECTHOME}
+print_var "Home disc space" "`bdf . | grep "%" | grep -v kbytes|awk '{print $3}'` KB used ; `bdf . | grep "%" | grep -v kbytes | awk '{print $4}'` KB free "
+
+
+print_separator 3
+echo " "
+echo " "

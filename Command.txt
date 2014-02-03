@@ -1,0 +1,50 @@
+
+ 
+ scp country.txt tzvig@indibm017:~/training/hp   //Copying a file from hpp708a to indibm017 machine.
+ 																(no space )
+ 
+ 
+ if (-f /sdkhome/sdk/SDKRoot/.ccmngr_login) then  
+        source  /sdkhome/sdk/SDKRoot   ////check if ccmngr_login exist, if yes then run the file (source command)
+        
+
+
+$HARVESTDIR/bin/refresh -XML -machine $HOST -v <version>-execute -Bb <bb_nam>  //Run refresh: for the specific bb: (from the server machine + mb_user)
+
+
+ 
+	
+Moving working command to background: ^Z
+Returning to command execution: fg
+
+     UID   PID  PPID  C    STIME TTY   TIME CMD
+mb_cctsr 20529 20527  0 17:12:24 pts/6  0:16 -tcsh
+
+
+<Command> & (Activate the command in the background)
+Returning to command execution: wait
+
+!<command> will run the last command that start with .."command"
+
+Using `` command tips
+
+\rm -f `cat ~/x`
+
+set x=`cat ~/x`
+rm -f $x
+
+set x=`cat ~/x`
+foreach f ( $x )
+ rm -f $f
+end
+
+
+
+ccInitChk.pl -env EMAILADDRESS
+ccInitChk.pl -patt EMAILADDRESS
+
+
+
+**********************************
+at 1:00
+	at> Command  +CTR D

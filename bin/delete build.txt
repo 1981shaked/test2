@@ -1,0 +1,23 @@
+build numbers:
+ls AMSS* -tr | tail -6 | cut -d . -f1 | cut -d _ -f3,4 | sort -n 
+
+
+foreach f (`ls AMSS* -tr | tail -6 | cut -d . -f1 | cut -d _ -f3,4 | sort -n `)
+ls $f | grep "not found"
+end
+
+
+
+ilhp053!mb_cctsa:/sdkhome/sdk/ABP7.5/SP1PB18HF21 [120]> find . -type l
+./SDKRoot/ABP7.5.1.0_64OG/modules/cpf/lib/HP-UX/libtten.so
+./SDKRoot/ABP7.5.1.0_64OG/modules/add
+./SDKRoot/ABP7.5.1.0_64OG/modules/pv
+./SDKRoot/ABP7.5.1.0_64OG/modules/ns
+
+
+
+ilhp053!mb_cctsa:/TSATST/tsa/storages/CRM/SDK_CRM/v775/SDK_CRM_7.5.2.8_SW6/CRM [166]> cp -R * /sdkhome/sdk/CRM7.5/SP2_PB8/SDKRoot/CRM7.5.2.8_775_SW6/modules/crm 
+
+
+
+ccHFInstall.pl -pd lel -ver 7.5.1.18 -hf 22:78 -currsdkdir /sdkhome/sdk/ABP7.5/SP1PB18HF21 -var 64OG –email tzvig@amdocs.com,drorbr@amdocs.com

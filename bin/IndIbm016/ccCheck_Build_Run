@@ -1,0 +1,24 @@
+#!/usr/local/bin/tcsh
+
+
+
+set PID = `ps -fu $USER | grep hbuild | awk '{print $2}'`
+set PPID = `ps -fu $USER | grep hbuild | awk '{print $3}'`
+set startOn = `ps -fu $USER | grep hbuild | awk '{print $5}'`
+set cmd = `ps -fu $USER | grep hbuild | awk '{print $9}'`
+set entity = `ps -fu $USER | grep hbuild | awk '{print $11}'`
+set ver = `ps -fu $USER | grep hbuild | awk '{print $13}'`
+set var = `ps -fu $USER | grep hbuild | awk '{print $15}'`
+set checkFile = ~/tmp/tt
+
+touch $checkFile
+touch ~/tmp/tt
+echo $PID >>~/tmp/tt
+echo $PPID>>~/tmp/tt
+echo $startOn>>~/tmp/tt
+echo $cmd>>~/tmp/tt
+echo $entity>>~/tmp/tt
+echo $ver>>~/tmp/tt
+echo $var>>~/tmp/tt
+
+

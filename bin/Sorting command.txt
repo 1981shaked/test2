@@ -1,0 +1,35 @@
+w
+indibm017!tzvig:~/training [121]> egrep -iv 'United|States|english|spanish' country.txtclscat country.txt | awk -F"," '{print $1,$3,$(NF - 2)}' | mailx -s "country" tzvig@amdocs.com   //Display fileds 1,3  and date to Entry U.N + send an email
+
+set a = `echo c9ord754V64OG.ini | awk -F754 '{print $1}'`
+echo $a
+c9ord
+ 
+cat country.txt | awk -F"," '{print $1,$3}'  //Display filed 1 and 3 only
+ 
+grep -v 'Asia' country.txt   //Display all countries that are not in Asia
+ 
+egrep -iv 'United|States|english|spanish' country.txt //View all lines that don't contain "United,english or spanish"
+cut -d, -f 1,2 country.txt  | head -3 Field 1 and 2 (-d is the ',' delimiters) + head indicates that it display only 3 lines
+  
+cut -d, -f 1,2 country.txt | sort -t, +1nr | head -3 //Display Field 1 and 2 (-d is the ',' delimiters) +sort it by First (population) fileds. the -t option in the sort looks for the 'delimiters'. in this way the sort command knows that the fileds are seperated by ',' char. 
+ 
+sort -t, +1nr  //Sort :  -t for fields,n for Numeric filter, r for reverse.
+  
+sort -t: +2n -3 tt | cut -d: -f1,3   //sort tt file (passwords file) by thier UID (field 3) and Display them fileds 1 and 3.
+
+show_str.pl -P lel -v v62_3 -t 64 | cut -d : -f 2 | sort -u  //displaying the only modules 
+
+ 
+Example for list of files in version (with sizes)
+
+cd ~/bb
+ll `SearchCC \*` | awk '{print $NF,$(NF - 4)}' | sort | l
+
+echo $bbs_full | sed 's/v80_0//g' | sed 's/\///g'
+set x=`echo $bbs_full | sed 's/v80_0//g' | sed 's/\///g'`
+echo $#x
+
+set x = ( cmig3aux cmig3dl cmig3gdd cmig3tool cmig9aux cmig9dl cmig9gdd cmig9tool mig_config mig_generated )
+ls -d $x
+

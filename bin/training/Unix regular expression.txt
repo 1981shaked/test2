@@ -1,0 +1,78 @@
+
+							***** Usefull sorting file command *******
+
+
+cat country.txt | awk -F"," '{print $1,$3,$(NF - 2)}' | mailx -s "country" tzvig@amdocs.com   //Display fileds 1,3  and date to Entry U.N + send an email
+ 
+cat country.txt | awk -F"," '{print $1,$3}'  //Display filed 1 and 3 only
+ 
+grep -v 'Asia' country.txt   //Display all countries that are not in Asia
+ 
+cut -d, -f 1,2 country.txt  // Display Field 1 and 2 (-d is the ',' delimiters)
+  
+cut -d, -f 1,2 country.txt | sort -t, +1nr | head -3 //Display Field 1 and 2 (-d is the ',' delimiters) +sort it by First (population) fileds. the -t option in the sort looks for the 'delimiters'. in this way the sort command knows that the fileds are seperated by ',' char. 
+
+*************Refresh all BB's in a loop ************
+snv4912!mb_ccvpl:~/bb [118]> foreach list ( `ls | cut -d/ -f1` ) //removing '/' char
+foreach? $HARVESTSERVERDIR/bin/refresh -XML -execute -machine snv4912 -v 625 -Bb $list
+
+ 
+sort -t, +1nr  //Sort :  -t for fields,n for Numeric filter, r for reverse.
+  
+sort -t: +2n -3 tt | cut -d: -f1,3   //sort tt file (passwords file) by thier UID (field 3) and Display them fileds 1 and 3.
+
+cutting output + and copying 
+
+show_str.pl -P lel -v v62_3 -t 64 | cut -d : -f 2 | sort -u  //displaying the only modules 
+
+
+
+
+foreach m ( `show_str.pl -P lel -v v62_4 -t 64 | cut -d : -f 2 | sort -u ` )
+ perl -e 's/62_3/62_4/g' -p –i ~/module/${m}/v624/config/module.config
+end	
+
+
+
+
+
+#####################################################################################
+
+ mailx -s "Country" tzvig@amdocs.com < country.txt
+Fields:
+1.	 Country
+2.	 Population
+3.	 Capital city
+4.	 Population of Capital city
+5.	 Continental Area
+6.	 Year Independent
+7.	 year to join UN
+8.	 Official religion
+9.	 Official languages
+
+
+ 
+United Kingdom,57533000,London,6756000,Europe,1066,1945,-,English
+United States,252177000,Washington DC,606900,North America,1776,1945,-,English
+Venezuela,19733000,Caracas,1290087,Latin America,1811,1945,-,Spanish
+Vietnam,67589000,Hanoi,1088862,Orient,1945,1977,-,Vietnamese
+Yemen,1184300,San'a,427150,Asia,1918,1957,Islam,Arabic
+Argentina,36955182,Buenos Aires,2033445,Latin America,1853,1945,-,Spanish
+Brazil,172860370,Brasilia,286037,0Latin America,1822,1945,-,Portuguese
+Bahrain,634137,Manama,34137,Persian Gulf,1973,1977,Islamic,Arabic
+Cameroon,15421937,Yaounde,421937,Africa,1960,1974,-,Franch
+Djibouti,451442,Djibouti,1442,Africa,1977,1980,-,Franch
+Equatorial Guinea,474214,Malabo,74214,Africa,1991,1995,-,Franch
+Fiji,832494,Suva,32494,Oceania,1970,1975,-,English
+France,59329691,Paris,329691,Europe,486,1945,-,Franch
+Greece,10601527,Athens,601527,Europe,1829,1945,-,Greek
+Germany,82797408,Berlin,1797408,Europe,1871,1960,-,German
+Honduras,6249598,Tegucigalpa,1249598,Latin America,1821,1945,-,Spanish
+China,1261832482,Beijing,61832482,Asia,-221,1945,-,Chinese
+Canada,31281092,Ottawa,1281092,North America,1867,1945,-,English
+Hungary,10138844,Budapest,1138844,Europe,1001,1945,-,Hungerian
+India,1014003817,New Delhi,14003817,Asia,1947,1950,-,Indian
+Italy,57634327,Rome,3634327,Europe,1861,1950,-,Italian
+Ireland,3797257,Dublin,797257,Europe,1921,1945,-,English
+Japan,126549976,Tokio,16549976,Asia,-660,1955,-,Japanese
+> 

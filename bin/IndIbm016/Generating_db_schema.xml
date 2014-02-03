@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<project name="DataCom Schema update" default="full_build">
+<property environment="env"/>
+<!--target name="checking_if_db_schema.xml.is.uptodate" description="Checking if db_schema.xml is uptodate">
+  <uptodate property="db_schema.xml.is.uptodate" targetfile="${env.CCBB_clfyConfiguration}/${env.CCVER}/Database/sch/db_schema.xml">
+    <srcfiles dir="${env.CCBB_clfyConfiguration}/${env.CCVER}/Database/sch/files" includes="**.*" excludes=".harvest.sig"/>
+  </uptodate>
+  <echo>checkUptodate result is ${db_schema.xml.is.uptodate}</echo>
+</target-->
+<target name="Generating.db_schema.xml" depends="checking_if_db_schema.xml.is.uptodate" unless="db_schema.xml.is.uptodate">
+	<echo>File db_schema.xml should be regenerated</echo>
+  <chmod file="${env.SCHEMA_MGR_HOME}/UpgradeSchema.pl" perm="555"/>
+  <exec command="${env.SCHEMA_MGR_HOME}/UpgradeSchema.pl -c ${env.CCBB_clfyConfiguration}/${env.CCVER}/Database/sch/files -u ${env.CCBB_clfyConfiguration}/${env.CCVER}/Database/sch/files -o ${env.CCBB_clfyConfiguration}/${env.CCVER}/Database/sch/db_schema.xml -x ${env.SCHEMA_MGR_HOME}/static/ObjectSchema_7_5.xsd -v com.clarify.schemamgr.SchemaValidator ${env.SCHEMA_MGR_UPG_MODE} -s ${env.HOST} -d ${env.SCHEMA_MGR_UPG_DB_NAME} -r ${env.SCHEMA_MGR_UPG_DB_USR} -p ${env.SCHEMA_MGR_UPG_DB_PASS}  -e ${env.SCHEMA_MGR_UPG_MAIL_REC} -m ${env.SCHEMA_MGR_UPG_MAIL_SRV} -b ${env.HOME}/backups -t ${env.SDK_CRM_HOME}/${env.CBO}/CRM/MTEL/Server/dbadmin_UNIX/dataex -l -z ${env.SCHEMA_MGR_UPG_DB_HOST}"/>
+</target>
+<target name="full_build" depends="" description="Running full build">
+		<antcall target="checking_if_db_schema.xml.is.uptodate"/>
+		<antcall target="Generating.db_schema.xml"/>
+</target>
+</project>
+

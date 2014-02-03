@@ -1,0 +1,120 @@
+#!/usr/local/bin/tcsh -f
+# ----------------------------------------o
+# Name         : gdd_check_error
+# Purpose      :  check error in gdd logs
+# Usage        : gdd_check_error <version>
+# Dependencies : 
+#              :
+# Author       :Dror Baruch 
+# Supervisure  :
+# ----------------------------------------o
+
+#=======
+# Usage
+#=======
+if ($#argv != 1) then
+   echo "Usage: `basename ${0}` <3 digit version number>"
+   echo "Example: `basename ${0}` 806"
+   exit (1)
+endif
+
+#=======
+# Main
+#=======
+echo Start checking for gdd error ....
+set ver = $1
+set build_logs_location = ${CCPROJECTHOME}/${CCPRODUCTVER}/${CCPROD}/Audit/proj
+set mailLog="$HOME/log/sendMail_`timestamp`.log"
+set amcLog="$HOME/log.product/log.ecare/log.v$ver/AMCbuildStatus.log.`cd $HOME/log.product/log.ecare/log.v$ver; ls -rt build_product.log* | grep -v ".ecr" | tail -1| cut -d. -f4`"
+
+set AMSSfile=`ls -rt ${build_logs_location}/log.ecrgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.gecr9gdd | grep hbuild.log | tail -1`
+
+set CHfile=`ls -rt ${build_logs_location}/log.chgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.cch9gdd | grep hbuild.log | tail -1`
+
+
+set ecr_err=`/usr/bin/grep 'XGen error' ${build_logs_location}/log.ecrgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.gecr9gdd/$AMSSfile |wc -l`
+
+
+set ch_err=`/usr/bin/grep 'XGen error' ${build_logs_location}/log.chgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.cch9gdd/$CHfile |wc -l`
+
+
+
+
+set secfile=`ls -rt ${build_logs_location}/log.secgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.csec9gdd | grep hbuild.log | tail -1`
+
+
+
+set sec_err=`/usr/bin/grep 'XGen error' ${build_logs_location}/log.secgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.csec9gdd/$secfile |wc -l`
+
+
+set gnfile=`ls -rt ${build_logs_location}/log.gngdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.cgn9gdd | grep hbuild.log | tail -1`
+
+
+set gn_err=`/usr/bin/grep 'XGen error' ${build_logs_location}/log.gngdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.cgn9gdd/$gnfile |wc -l`
+
+
+set cmfile=`ls -rt ${build_logs_location}/log.cmgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.ccm9gdd | grep hbuild.log | tail -1`
+
+set cm_err=`/usr/bin/grep 'XGen error' ${build_logs_location}/log.cmgdd${ver}${CCVARIANT_DELIMITER}${CCVARIANT}/log.ccm9gdd/$cmfile |wc -l`
+
+
+set buildNumber=`buildCounter Daily $1 0 | awk '{print $4}'`
+set CC = (drorbr@amdocs.com )
+#set CC = (LSInfraCC@tlv.amdocs.com BuildReportsLSINFRAFP@tlv.amdocs.com tusharp@amdocs.com )
+#set APPLICATION = (SBCLSAMSSDevTeamOnly@amdocs.com psecare@amdocs.com)
+set APPLICATION = 
+#set ST = ( AVIVBE@amdocs.com SMADARL@amdocs.com limorf@amdocs.com eranme@amdocs.com)
+set ST = 
+set ENV =
+#set ENV = ( anak@amdocs.com marinal@amdocs.com sandeept@amdocs.com dbansal@amdocs.com nbanerje@amdocs.com sanjaym@amdocs.com mandeeps@amdocs.com rajeshse@amdocs.com rajibd@amdocs.com mayurv@amdocs.com anishk@amdocs.com deepakt@amdocs.comsameerb@amdocs.com nimrodr@amdocs.com katering@amdocs.com )
+set FAILED_mail_list = ( $APPLICATION $CC $ST $ENV drorbr@amdocs.com )
+set SUCCES_mail_list = ( $APPLICATION $CC $ST $ENV drorbr@amdocs.com )
+#set FAILED_mail_list = ( $CC )
+#set SUCCES_mail_list = ( drorbr@amdocs.com )
+touch $mailLog $amcLog
+
+
+if ( $ecr_err != 0 ) then
+  echo ecr failed
+	echo " ${build_logs_location}\log.ecrgdd${ver}V32\log.gecr9gdd\$AMSSfile" >> $mailLog
+	endif
+	if ( $ch_err != 0 ) then
+	echo ch failed
+		echo " ${build_logs_location}/chgdd${ver}V32\log.cch9gdd\$CHfile" >> $mailLog
+endif
+if ( $sec_err != 0 ) then
+  echo sec failed
+	echo " ${build_logs_location}\log.secgdd${ver}V32\log.csec9gdd\$secfile" >> $mailLog
+	endif
+	if ( $gn_err != 0 ) then
+		echo gn failed
+		echo " ${build_logs_location}\log.gngdd${ver}V32\log.cgn9gdd\$gnfile" >> $mailLog
+endif
+	if ( $cm_err != 0 ) then
+		echo cm faild
+		echo " ${build_logs_location}/cmgdd${ver}V32\log.ccm9gdd\$cmfile" >> $mailLog
+
+endif
+
+set isGddFailed=`cat $mailLog|wc -l`
+
+if ( $isGddFailed != 0 ) then
+		echo gdd build failed, please check it - sending mail now :
+    cat $mailLog
+		set mailLogFinal=${mailLog}.final
+		touch $mailLogFinal
+		 echo "Hi all,\n GDD Build number $buildNumber for LightSpeed AMSS ${CCPRODVER} on server ${HOST}failed," >> $mailLogFinal
+		 echo "please check the last logs:\n"  >> $mailLogFinal
+		 cat $mailLog >>$mailLogFinal
+
+
+		cat  $mailLogFinal | mailx -r "LS CC"  -s  " GDD Build - LightSpeed AMSS ${CCPRODVER} build number $buildNumber on ${HOST} failed" $FAILED_mail_list
+		
+	else
+		echo "************** Send The Mail ***************"
+		echo "Hi  all ,\n GDD Build number $buildNumber for LightSpeed AMSS ${CCPRODVER} on server ${HOST} ended successfully," >> $mailLog 
+		echo "please check the last GDD logs \n ">> $mailLog
+		cat $mailLog | mailx -r "LS CC"  -s "GDD Build - LightSpeed AMSS ${CCPRODVER} build number $buildNumber on ${HOST} ended successfully" $SUCCES_mail_list
+		echo "************************ Build finished successfully ****************"
+		
+endif

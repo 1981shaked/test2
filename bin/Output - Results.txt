@@ -1,0 +1,34 @@
+---------- Begin  <Promote to Build>  Process ---------------
+----Begin-UDP-Output----
+----End-UDP-Output----
+I00060052: Verify Promoter  execution was successful.
+----Begin-UDP-Output----
+----End-UDP-Output----
+I00060052: Verify Environment Opened  execution was successful.
+----Begin-UDP-Output----
+----End-UDP-Output----
+I00060052: Verify Environment Not In Upgrade  execution was successful.
+----Begin-UDP-Output----
+----End-UDP-Output----
+I00060052: Add To Group  execution was successful.
+E0306000e: An unexpected exception occurred in HAPI.
+Exception at R:\hapi\hhudp.cpp( 836 )
+CPtHUDP Content:
+-----------------
+CPtHProcess Content:
+EnvObjId: 263; StateObjId: 1622; Type: UDPProcess; Order: 9; PostCount: 0; PreCount: 0
+Prelinked Process - Parent Process ObjId: 26322
+Name: Check Affected Version Form
+CPtHarvestObject Type: 216 ObjId: 31077
+Creator Name: tzvig6/19/2011 9:26:11 PM
+tzvig6/21/2011 10:53:21 AM
+Note: 
+- End of CPtHProcess Content -
+Program Name: UDP66VerifyTasksAffectedVersions  "[project]" ["package"]
+UDP Description: 
+Program Input Parameters: 
+UDP Type: Client
+- End of CPtHUDP Content -
+S10060050: The PreLinked process(es) failed for parent process: Promote to Build .
+E03060019: Process Execute failed. Process Name: Promote to Build .
+---------- End  <Promote to Build>  Process ---------------

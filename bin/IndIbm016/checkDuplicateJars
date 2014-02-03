@@ -1,0 +1,97 @@
+#!/usr/local/bin/tcsh -f
+
+# ----------------------------------------o
+# Name         : checkDuplicateJars
+# Purpose      : Alert for CRM application on duplicate jars between LEL to SDK
+# Usage        : checkDuplicateJars -v <version> -p <full path to the SDK>
+# Author       : Tal Zigman
+#------------------------------------------------
+
+if ( ! $?LINE_BASE ) then
+
+	if ( $?CCPRODUCT ) then
+		setenv LINE_XTRAC_PROD $CCPRODUCT
+	else
+		setenv LINE_XTRAC_PROD X
+	endif
+	setenv LINE_PROD_NAME $LINE_XTRAC_PROD
+
+	setenv CC_MASTER 	$CCPROJECTHOME
+	setenv suffix 		`echo $CCPROJ | sed 's/_1$//' | sed 's/V64OG//g' | sed 's/V64//g' | sed 's/V32//g' | sed 's/[0-9][a-zA-DF-Z]//g' | sed 's/[a-zA-DF-Z_]//g'`
+	setenv cc_ver 		v`echo $suffix | cut -c1-2`_`echo $suffix | cut -c3`
+	setenv Line_Proj_Var 	`echo $CCPROJ | sed "s/^.*$suffix//"`
+	setenv LINE_LOG 	$CC_MASTER/Line/Data
+	setenv LINE_DATA_HOME 	$LINE_LOG/$suffix
+
+	mkdir -p $LINE_DATA_HOME
+
+else
+	source $LINE_BIN/line.cshrc_version
+endif
+
+if ( ! $LINE_SDK_USED ) then
+	echo "The script is useful for products using SDK only\n"
+	exit
+endif
+
+if ( $# < 1 ) then
+	if ( $?CBO_HOME ) then
+		echo "Example: `basename $0` $CBO_HOME [-v v<NN>_<N>]"
+	else
+		echo "Example: `basename $0` $SDKHOME/$SDKRELEASE [-v v<NN>_<N>]"
+	endif
+	exit
+endif
+
+shift
+while ( $#argv != 0 )
+	switch ( "$1" )
+	case "-v":
+		setenv cc_ver $2
+		shift
+		breaksw
+	default:
+		echo "ERROR: Unrecognized option $1"
+		exit
+		breaksw
+	endsw
+	shift
+end
+
+set sdk_path=$1
+
+set LIST_JARS_IN_SDK=$LINE_DATA_HOME/jar_list.SDK
+set LIST_DUPLICATE=$LINE_DATA_HOME/jar_list.duplication
+
+rm -f $LIST_JARS_IN_SDK; touch $LIST_JARS_IN_SDK
+echo "\nSDK area: $sdk_path\n" >! $LIST_DUPLICATE
+
+cd $sdk_path
+foreach jar_name ( `find * -follow -type f -name "*.jar"` )
+	/usr/bin/ls -lA $jar_name | awk '{print $9,$5}' >> $LIST_JARS_IN_SDK
+end
+foreach ear_war ( `find * -follow -type f -name "*.war" -o -name "*.ear"` )
+	jar tvf $ear_war | awk '{print $8,$1}' | sed "s#^#`echo $ear_war` -> #" >> $LIST_JARS_IN_SDK
+end
+
+cd $CC_MASTER/bb
+
+set count = 0
+foreach jar ( `find */$cc_ver -type f -name \*.jar | grep -v CclfyCore` )
+	set jar_name = `basename $jar`
+	set jarSize = `ls -l $jar | awk '{print $5}'`
+	set grep_resault = `grep -c -w $jar_name $LIST_JARS_IN_SDK` 
+	if ( $grep_resault > 0 ) then
+		set count = `expr $count + 1`
+		echo "===== $count. $jar_name =====" >> $LIST_DUPLICATE
+		echo "\n""~"/bb/$jar `ls -l $jar | awk '{print $5}'` >> $LIST_DUPLICATE
+		echo "" >> $LIST_DUPLICATE
+		grep -w $jar_name $LIST_JARS_IN_SDK >> $LIST_DUPLICATE
+		echo "" >> $LIST_DUPLICATE
+	endif
+end
+
+rm -f $LIST_JARS_IN_SDK
+
+cat $LIST_DUPLICATE
+

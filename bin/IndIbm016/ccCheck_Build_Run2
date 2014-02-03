@@ -1,0 +1,19 @@
+#!/usr/local/bin/tcsh
+
+
+set checkFile = ~/tmp/tt
+rm -f $checkFile
+ps -fu $USER|grep hbuild | grep hbuild > $checkFile
+
+set checkFile2 = ~/tmp/tt2
+rm -f $checkFile2
+touch $checkFile2
+foreach ff (`cat $checkFile`)
+cat $checkFile | grep hbuild | awk '{print $2}' >>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $3}'>>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $5}'>>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $9}'>>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $11}'>>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $13}'>>$checkFile2
+cat $checkFile | grep hbuild | awk '{print $15}'>>$checkFile2
+end

@@ -1,0 +1,15 @@
+
+Opening Version:  
+foreach m (`show_str.pl -P lel -v v62_3 -t 64 | cut -d : -f 2 | sort -u `)   
+
+echo cp –f ~/module/${m}/v623/config/module.config   ~/module/${m}/v624/config/module.config
+
+end 
+
+ 
+
+foreach m ( `show_str.pl -P lel -v v62_4 -t 64 | cut -d : -f 2 | sort -u ` )
+
+ perl -e 's/62_3/62_4/g' -p –i ~/module/${m}/v624/config/module.config
+
+end  

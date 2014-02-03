@@ -1,0 +1,214 @@
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the dos2unix package.
+#
+# Philipp Thomas <psmt@opensuse.org>, 2010.
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-04-04 08:09+0200\n"
+"PO-Revision-Date: 2010-02-05 16:34+0100\n"
+"Last-Translator: Philipp Thomas <pth@suse.de>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Lokalize 1.0\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: unix2dos.c:158
+#, c-format
+msgid ""
+"unix2dos %s (%s)\n"
+"Usage: unix2dos [-fhkLlqV] [-c convmode] [-o file ...] [-n infile "
+"outfile ...]\n"
+" -c --convmode    conversion mode\n"
+"   convmode       ascii, 7bit, iso, mac, default to ascii\n"
+" -f --force       force conversion of all files\n"
+" -h --help        give this help\n"
+" -k --keepdate    keep output file date\n"
+" -L --license     display software license\n"
+" -l --newline     add additional newline\n"
+" -n --newfile     write to new file\n"
+"   infile         original file in new file mode\n"
+"   outfile        output file in new file mode\n"
+" -o --oldfile     write to old file\n"
+"   file ...       files to convert in old file mode\n"
+" -q --quiet       quiet mode, suppress all warnings\n"
+"                  always on in stdio mode\n"
+" -V --version     display version number\n"
+msgstr ""
+"unix2dos %s (%s)\n"
+"Aufruf: unix2dos [-fhkLlqV] [-c Konvmodus] [-o Datei ...] [-n Eingabedatei "
+"Ausgabedatei ...]\n"
+" -c --convmode    Konvertierungsmodus\n"
+"   Konvmodus      ascii, 7bit, iso, mac, Standard ist ascii\n"
+" -f --force       erzwingt die Konvertierung aller Dateien\n"
+" -h --help        gibt diese Hilfe aus\n"
+" -k --keepdate    Datum der Ausgabedateien bleibt erhalten\n"
+" -L --license     Ausgabe der Softwarelizenz\n"
+" -l --newline     fügt einen Zeilenumbruch hinzu\n"
+" -n --newfile     Es wird in neue Dateien geschrieben\n"
+"   Eingabedatei   Originaldatei im \"neue Datei\" Modus\n"
+"   Ausgabedatei   Ausgabedatei im \"neue Datei\" Modus\n"
+" -o --oldfile     die alten Dateine werden überschrieben\n"
+"   Datei ...      die zu konvertierenden Dateien im \"alte Datei\" Modus\n"
+" -q --quiet       leiser Modus, unterdrückt alle Warnungen\n"
+"                  ist im stdio-Modus immer aktiv\n"
+" -V --version     Ausgabe der Versionsnummer\n"
+
+#: unix2dos.c:180
+msgid ""
+"Copyright (C) 2009-2010 Erwin Waterlander\n"
+"Copyright (C) 1994-1995 Benjamin Lin\n"
+"All rights reserved.\n"
+"\n"
+"Redistribution and use in source and binary forms, with or without\n"
+"modification, are permitted provided that the following conditions\n"
+"are met:\n"
+"1. Redistributions of source code must retain the above copyright\n"
+"   notice, this list of conditions and the following disclaimer.\n"
+"2. Redistributions in binary form must reproduce the above copyright\n"
+"   notice in the documentation and/or other materials provided with\n"
+"   the distribution.\n"
+"\n"
+"THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY\n"
+"EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n"
+"IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR\n"
+"PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE\n"
+"FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\n"
+"CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT\n"
+"OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR\n"
+"BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,\n"
+"WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE\n"
+"OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN\n"
+"IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
+msgstr ""
+"Copyright © 1994,1995 Benjamin Lin\n"
+"Copyright © 2009,2010  Erwin Waterlander\n"
+"Alle Rechte vorbehalten.\n"
+"\n"
+"Verbreitung und Verwendung als Quelltext oder Binärdatei, in geänderter\n"
+"oder ungeänderter Form sind gestattet, soweit die folgenden Bedingungen\n"
+"eingehalten werden:\n"
+"1. Weiterverbreitung des Quellcodes muss den obigen Copyrightshinweis,\n"
+"   Diese Liste von Bedingungen sowie den folgenden Haftungsausschluss\n"
+"\n"
+"   beibehalten.\n"
+"2. Weiterverbreitung in binärer Form muss den obigen Copyright-Hinweis\n"
+"   in der Dokumentation oder anderem der Distribution beiliegenden\n"
+"   Material wiedergeben.\n"
+"\n"
+"DIESE SOFTWARE WIRD VOM AUTHOR WIE VORLIEGT ZUR VERFÜGUNG GESTELLT\n"
+"UND JEGLICHE AUSDRÜCKLICH GENANNTEN ODER IMPLIZITEN GARANTIEN,\n"
+"EINSCHLIEßLICH, ABER NICHT DARAUF BESCHRÄNKT, DER GARANTIE DER\n"
+"HANDELBARKEIT UND DER EIGNUNG FÜR EINEN BESTIMMTEN ZWECK WERDEN\n"
+"HIERMIT AUSGESCHLOSSEN. IN KEINEM WIE AUCH IMMER GELAGERTEN FALL KANN\n"
+"DER AUTHOR FÜR IRGENDWELCHE DIREKTEN ODER INDIREKTEN, ZUFÄLLIGEN,\n"
+"BESONDEREN ODER BEISPIELHAFTEN SCHÄDEN (EINSCHLIESSLICH ABER NICHT\n"
+"AUSSCHLIESSLICH DER LIEFERUNG VON ERSATZGÜTERN ODER DIENSTEN;VERLUST\n"
+"DER NUTZBARKEIT, DER DATEN ODER DER GEWINNE ODER ETWAIGEN VERDIENST-\n"
+"AUSFALL-ENTSCHÄDIGUNGEN) HAFTBAR GEMACHT WERDEN, WIE AUCH IMMER SIE\n"
+"VERURSACHT WURDEN UND WELCHE HAFTUNGSMÖGLICHKEIT ZUGRUNDE GELEGT WIRD,\n"
+"SEI ES DURCH VERTRAG, VERBINDLICHKEIT ODER SCHADEN (EINSCHLIESSLICH\n"
+"FAHRLÄSSIGKEIT), DIE AUS DER VERWENDUNG DIESER SOFTWARE ERWÄCHST,\n"
+"SELBST WENN AUF DIE MÖGLICHKIET SOLCHER SCHÄDEN HINGEWIESEN WURDE.\n"
+
+#: unix2dos.c:212
+msgid "With native language support.\n"
+msgstr "Mit Unterstützung von Landessprachen\n"
+
+#: unix2dos.c:308 unix2dos.c:346 unix2dos.c:384 unix2dos.c:408 unix2dos.c:421
+#: unix2dos.c:432
+msgid "unix2dos: can not write to output file\n"
+msgstr "unix2dos: Schreiben in Ausgabedatei nicht möglich\n"
+
+#: unix2dos.c:444
+#, c-format
+msgid "unix2dos: program error, invalid conversion mode %d\n"
+msgstr "unix2dos: Programmfehler: ungültiger Konvertierungsmodus %d\n"
+
+#: unix2dos.c:558 unix2dos.c:683
+msgid "unix2dos: Failed to open temporary output file"
+msgstr "unix2dos: Die temporäre Ausgabedatei konnte nicht geöffnet werden"
+
+#: unix2dos.c:563 unix2dos.c:693
+#, c-format
+msgid "unix2dos: using %s as temporary file\n"
+msgstr "unix2dos: %s wird als temporäre Datei verwendet\n"
+
+#: unix2dos.c:631 unix2dos.c:754
+#, c-format
+msgid "unix2dos: problems renaming '%s' to '%s'\n"
+msgstr "unix2dos: es gibt Probleme beim Umbenennen von »%s« zu »%s«\n"
+
+#: unix2dos.c:632 unix2dos.c:755
+#, c-format
+msgid "          output file remains in '%s'\n"
+msgstr "          Ausgabedatei verbleibt in »%s«\n"
+
+#: unix2dos.c:819
+msgid ""
+"unix2dos: error: Value of environment variable UNIX2DOS_LOCALEDIR is too "
+"long.\n"
+msgstr ""
+"unix2dos: Fehler: Der Inhalt der Umgebungsvariablen UNIX2DOS_LOCALEDIR ist "
+"zu lang.\n"
+
+#: unix2dos.c:899
+#, c-format
+msgid "unix2dos: invalid %s conversion mode specified\n"
+msgstr "unix2dos: der angegebene Konvertierungsmodus %s ist ungültig\n"
+
+#: unix2dos.c:907
+#, c-format
+msgid "unix2dos: option '%s' requires an argument\n"
+msgstr "unix2dos: Die Option »%s« benötigt ein Argument\n"
+
+#: unix2dos.c:918 unix2dos.c:930 unix2dos.c:1016
+#, c-format
+msgid "unix2dos: target of file %s not specified in new file mode\n"
+msgstr ""
+"unix2dos: das Ziel von Datei %s wurde im neue Datei Modus nicht angegeben\n"
+
+#: unix2dos.c:954 unix2dos.c:983
+#, c-format
+msgid "unix2dos: Skipping %s, not a regular file.\n"
+msgstr "unix2dos: %s wird übersprungen da es keine reguläre Datei ist.\n"
+
+#: unix2dos.c:958 unix2dos.c:987
+#, c-format
+msgid "unix2dos: Skipping binary file %s\n"
+msgstr "unix2dos: die binäre Datei %s wird übersprungen\n"
+
+#: unix2dos.c:963
+#, c-format
+msgid "unix2dos: converting file %s to file %s in MAC format ...\n"
+msgstr "unix2dos: Datei %s wird in Datei %s im MAC-Format konvertiert ...\n"
+
+#: unix2dos.c:965
+#, c-format
+msgid "unix2dos: converting file %s to file %s in DOS format ...\n"
+msgstr "unix2dos: Datei %s wird in Datei %s im DOS-Format konvertiert ...\n"
+
+#: unix2dos.c:970
+#, c-format
+msgid "unix2dos: problems converting file %s to file %s\n"
+msgstr ""
+"unix2dos: bei der Konvertierung von Datei %s in Datei %s sind Probleme "
+"aufgetreten\n"
+
+#: unix2dos.c:992
+#, c-format
+msgid "unix2dos: converting file %s to MAC format ...\n"
+msgstr "unix2dos: Datei %s wird ins MAC-Format konvertiert ...\n"
+
+#: unix2dos.c:994
+#, c-format
+msgid "unix2dos: converting file %s to DOS format ...\n"
+msgstr "unix2dos: Datei %s wird ins DOS-Format konvertiert ...\n"
+
+#: unix2dos.c:999
+#, c-format
+msgid "unix2dos: problems converting file %s\n"
+msgstr "unix2dos: beim Konvertieren von Datei %s sind Probleme aufgetreten\n"

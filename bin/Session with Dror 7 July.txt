@@ -1,0 +1,47 @@
+set a = `echo c9ord754V64OG.ini | awk -F754 '{print $1}'`
+
+snt5017!mb_cctls:~/v754/oms/data.org [205]> set a = `echo c9ord754V64OG.ini | awk -F754 '{print $1}'`
+snt5017!mb_cctls:~/v754/oms/data.org [206]>
+
+snt5017!mb_cctls:~/v754/oms/data.org [203]> echo $a
+c9ord
+
+snt5017!mb_cctls:~/v754/oms/data.org [207]> foreach files ( `ls` )
+foreach? set a = `echo $files | awk -F754 '{print $1}'`
+foreach? echo $files
+foreach? echo $a
+foreach? end
+c9ord754V64OG.ini
+c9ord
+gord754V64OG.ini
+gord
+ordgdd754V64OG.ini
+ordgdd
+osecgdd754V64OG.ini
+osecgdd
+snt5017!mb_cctls:~/v754/oms/data.org [208]>
+
+snt5017!mb_cctls:~/v754/oms/data.org [216]> foreach files ( `ls` )
+foreach? set a = `echo $files | awk -F754 '{print $1}'`
+foreach? mv $files ${a}755V64OG.ini
+foreach? echo "$files ${a}755V64OG.ini"
+foreach? end
+c9ord754V64OG.ini c9ord755V64OG.ini
+gord754V64OG.ini gord755V64OG.ini
+ordgdd754V64OG.ini ordgdd755V64OG.ini
+osecgdd754V64OG.ini osecgdd755V64OG.ini
+snt5017!mb_cctls:~/v754/oms/data.org [217]>
+
+snt5017!mb_cctls:~/v754/oms/data.org [221]> perl -pe 's |754|755||g' -pi *
+
+
+Regards,
+Dror Baruch
+
+Infra Competency Center
+Office: +972-9-77-62042
+Mailto:drorbr@amdocs.com
+Developer’s Infra Knowledge Base 
+
+
+

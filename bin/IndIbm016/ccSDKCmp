@@ -1,0 +1,580 @@
+#!/usr/bin/ksh
+#-----------------------------------------------------#
+# I N I T   S E C T I O N : 
+#-----------------------------------------------------#                                                                                                       
+# Name    : ccSDKCmp 
+# Purpose: Compare SDK installation between:
+#		1. differnt versions
+#		2. same version different servers
+# 
+# General Flow:  1.                      
+#                2. 
+#                3. 
+#                 
+# Usage:        ccSDKCmp [-h] { -sv <source path> -tv <target path> | -sv <source path> 
+#               {{-cf <file> [-d <days>]} | {-f <file> [-i]} }
+#               [-m <mail adds/group>]
+# 
+# Flags:        -h    Show usage.
+#		-sv   Source version full path.
+#		-tv   Target version full path.
+#		-cf   Create report file <file name> - to compare to using -f.
+#		-d    Number of days back for syncronization.
+#		-f    Compare existing SDK to report file <file name>.
+#		-i    Import the exp file to the SDK 
+#		-m    Mail address or Mail group in ~/.mai_adss.txt .
+#                                                                                                       
+# Assumptions:  1. The .harvest.sig & *.BCK files were excluded from the list of checked files
+#		   under the SDK. 
+#                                             
+# Dependencies (files and scripts):  None 
+#                                     
+#                                                                                                       
+# Author:  Malka Sulimani (9/3/2006)
+# Supervisor:   
+#                                                                                        
+######################################################################################################### 
+#-----------------------------------------------------#
+# F U N C T I O N S   S E C T I O N 
+# Function: PrintOut
+# Purpose : prints to screen (and file if requested) a standard message
+# Input: $1 - Message type (I/i/Info or W/w/Warning or E/e/Error N/n/None)
+#        $2 - Message - free string.
+#	 $3 - File - Print also to file
+#	 $4 - f - use printf instead of print
+#-----------------------------------------------------#
+function PrintOut {
+  MessageType=$1
+  Message=$2
+  LOutPutFile=$3
+  if [[ $4 = "" ]]
+    then
+	PrintF=print
+  else
+	PrintF=print
+  fi
+  case $MessageType in
+	
+	"Info"|"I"|"i")		MessageType="  Info:"  ;;
+	"Warning"|"W"|"w")	MessageType="  Warning:" 	;;
+	"None"|"N"|"n")		MessageType="	" ;;
+	"Error"|"E"|"e")	MessageType="  Error:" 
+				Success=1
+				;;
+  esac
+
+  if [[ $LOutPutFile = "" ]]
+    then
+	$PrintF "`/usr/bin/date '+%Y%m%d_%H%M%S'`: $MessageType $Message" 
+  else
+	$PrintF "`/usr/bin/date '+%Y%m%d_%H%M%S'`: $MessageType $Message" | tee -a $LOutPutFile
+  fi
+}
+
+
+#-----------------------------------------------------#
+# Function: Usage
+# Purpose : print out usage and exit with error value (1)
+# Input: $1 - Message - free text of error message.
+#-----------------------------------------------------#
+function Usage {
+  Message=$1
+  print "\n Input Error: $Message \n"
+  print "Usage: ${ScriptName} [-h] { -sv <source path> -tv <target path> | -sv <source path>"
+  print "                     {{-cf <file> [-d <days>]} | {-f <file> [-i]} [-m <mail adds/group>] }\n"
+  print "          -h  	Show usage."
+  print "          -sv 	Source version (full path)."
+  print "          -tv 	Target version (full path)."
+  print "          -cf 	Create report file <file name> - to compare to using -f."
+  print "          -d    Number of days back for syncronization - used with f/cf option only."
+  print "          -f  	Compare existing SDK to report file <file name>."
+  print "          -i    Import the exp file to the SDK."	
+  print "          -m  	Mail address or Mail group in ~/.mai_adss.txt ."
+  print "          \nExamples: "
+  print "		Compare between 2 versions:	    ${ScriptName} -sv /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600 -tv /sdkhome/sdk/sdk_for_601/SDKRoot/ABP600"
+  print "		Create report file: 	   	    ${ScriptName} -sv /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600 -cf ~/tmp/sdk_600_report"
+  print "		Create export report file include pack of last changed files: ${ScriptName} -sv /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600 -cf ~/tmp/sdk_600_report -d 6"
+  print "		Compare SDK version to report file:                      ${ScriptName} -sv /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600 -f ~/tmp/sdk_600_report"
+  print "		Compare and import SDK version according to export file: ${ScriptName} -sv /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600 -f ~/tmp/sdk_600_report -i\n"
+  exit 1
+}
+#-----------------------------------------------------#
+# Function: CheckInput
+# Purpose : basic check on input params
+# Input: $*
+#-----------------------------------------------------#
+function CheckInput {
+  if [[ $* = "-h" ]] 
+    then
+	Usage ""
+  fi
+  if [[ $# -gt $MaxParams || $# -lt $MinParams ]]
+   then
+	Usage "Invalid Number of arguments ($#)!"
+  fi
+}
+#-----------------------------------------------------#
+# Function: InitValidInput
+# Purpose : Init and Validate Input
+# Input: $*
+#-----------------------------------------------------#
+function InitValidInput {
+  EntityCount=0
+  Days=0
+  Imp=0
+ 
+  while  [ $# != 0 ]
+   do
+	case $1 in	
+		"-i" )  Imp=1
+			shift
+			;;
+                "-sv")  SVersion=$2 #e.g. /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600
+                        if [[ ! -d $SVersion ]]
+                          then
+                                Usage "No such directory $SVersion\nInvalid SDK path (e.g. /sdkhome/sdk/sdk_for_600/SDKRoot/ABP600)!"
+                        fi
+                        shift ; shift
+                        ;;
+                "-tv")  TVersion=$2 #e.g. /sdkhome/sdk/sdk_for_601/SDKRoot/ABP600
+			if [[ ! -d $TVersion ]]
+                          then
+                                Usage "No such directory $TVersion\nInvalid SDK path (e.g. /sdkhome/sdk/sdk_for_601/SDKRoot/ABP600)!"
+                        fi
+			EntityCount=$(( $EntityCount + 1 ))     
+			RepMode="T"
+                        shift ; shift   
+                        ;;      
+                "-cf")  SRepFile=$2
+			OutDir=`dirname $SRepFile`
+			if [[ ! -d $OutDir ]]
+			  then
+				Usage "There is no such directory \"$OutDir\" !"	
+			fi
+                        EntityCount=$(( $EntityCount + 1 ))
+			RepMode="C"
+                        shift ; shift
+                        ;;
+                "-f")   TRepFile=$2
+			RepMode="F"
+                        if [[ ! -f $TRepFile ]]
+                          then
+                                Usage "There is no such file or directory \"$TRepFile\" !"        
+                        fi
+                        EntityCount=$(( $EntityCount + 1 ))
+                        shift ; shift
+                        ;;
+		"-d")   Days=$2
+			if [[ ! $Days > 0 ]]
+			  then
+				Usage "Invalid number of days ($Days) !"
+			fi
+			shift ; shift
+			;;
+		"-m")	MailAdds=$2			
+			shift ; shift
+			;;
+		"-h")	Usage "" 
+			shift
+			;;
+		*)	Usage "Unknown Param $1"
+			shift
+			;;
+	esac	
+  done
+
+  ## Validate mandatory input ##
+  case $EntityCount in
+	0) Usage "No Entety inputted (-tv | -cf | -f)!" ;;
+	1) ;;
+	*) Usage "Only one Entety should be inputted (-tv | -cf | -f)!" ;;
+  esac
+  
+  if [[ $SVersion = ""  ]] 
+    then
+	Usage "Must input Source Version Path (-sv)!"
+  fi
+
+  #if the source and target version are the same there is nothing to check
+  if [[ $SVersion = $TVersion  ]]
+    then
+        Usage "Source and Target Version are the same! There is nothing to do ..."
+  fi
+
+  #the -d option is not valid with -tv/-f
+  if [[ $RepMode != "C" && $Days != 0 ]]
+    then
+	Usage "Invalid input! The -d option is valid with -cf only"
+  fi
+
+  if [[ $RepMode != "F" && $Imp = 1 ]] 
+    then
+	Usage "Invalid input! The -i option is valid with -f only"
+  fi
+}
+
+#-----------------------------------------------------#
+# Function: SendMail
+# Purpose : sends mail using mailx
+# Input: $1 - mail subject.
+#        $2 - mail address/group.
+#        $3 - mail text file.
+#        $4 - mail text attachment (0 - if there is no attachement).
+#-----------------------------------------------------#
+function SendMail {
+  MSub=$1
+  MAdd=$2
+  MText=$3
+  MAtt=$4
+
+#print "\nMSub=$1:MAdd=$2:MText=$3:MAtt=$4:\n"
+
+  if [[ ! -f $MText ]]
+    then
+        PrintOut e "Can't find $MText to send via mail!"
+        return 1
+  fi
+
+  if [[ $MAtt = 0 ]]
+    then
+        mailx -s "$MSub" $MAdd < $MText
+  else
+        if [[ ! -f $MAtt ]]
+          then
+                PrintOut e "Can't find $MAtt to send via mail!"
+                return 1
+        fi
+        uuencode $MAtt /tmp/$ScriptName.$$ > $Tmp1File 
+        cat $MText $Tmp1File | mailx -s "$MSub" $MAdd 
+  fi
+}
+
+#-----------------------------------------------------#
+# Function: ChkRetVal
+# Purpose : print out error message if input return value -ne 0
+# Input: $1 - $? of last operation.
+#        $2 - Error Message.
+#-----------------------------------------------------#
+function ChkRetVal {
+  Message=$2
+  if [[ $1 -ne 0 ]] 
+    then
+	PrintOut e "Problems in: $Message"
+	exit $1
+  fi
+}
+#-----------------------------------------------------#
+# Function: ScriptExit
+# Purpose : exit with return value - print success status
+# Input: $1 rerun success mode
+#-----------------------------------------------------#
+function ScriptExit {
+  LocalSuccess=$1
+  
+  ## display output message of success/failure ##
+  if [[ $LocalSuccess -ne 0 ]] 
+    then
+	PrintOut e "$ScriptName Ended with Errors."
+	PrintOut e " Check log - $LogFile"
+  else
+	PrintOut i "$ScriptName Ended Successfully"
+  fi
+  
+  ## Cleanup ##
+  cd $WDir
+  $Rm -rf $TmpDir  
+  $Rm -rf $ExpTmpDir 
+  
+  ## Return Value ##
+  exit $LocalSuccesr=${OutDir}/ExpTmpDir.$TimeStamp ; $Mkdir -p $ExpTmpDirs
+}
+
+#-----------------------------------------------------#
+# Function: CrtRepFile
+# Purpose : Crete report file for SDK version path
+# Input: $1 - SDK version path.
+#-----------------------------------------------------#
+function CrtRepFile {
+  SDKPath=$1
+  cd $SDKPath  
+  PrintOut i "Generating report file for SDK path $SDKPath ..."
+  $Rm -f $TmpRepFile $TmpRepFile1
+  #cksum `$Find . -type f | grep -v .harvest.sig | grep -v .BCK` > $TmpRepFile1 ; ChkRetVal $? "cksum"
+  $Find . -type f | grep -v .harvest.sig | grep -v .BCK | grep -v xml.table |xargs cksum > $TmpRepFile1 ; ChkRetVal $? "cksum"
+  cat $TmpRepFile1 | sort -n | awk '{print $1 " " $3}' > $TmpRepFile  
+  cd $WDir
+}
+
+#-----------------------------------------------------#
+# Function: CrtExp
+# Purpose : Crete export file for SDK version path
+# Input: $1 - SDK version path.
+#-----------------------------------------------------#
+function CrtExp {
+  
+  ExpTmpDir=${OutDir}/ExpTmpDir.$TimeStamp ; $Mkdir -p $ExpTmpDir
+  $Cp $SRepFile $ExpTmpDir/sdk_report
+  SDKPath=$1
+  cd $SDKPath
+  CheckFile=`$Find . -type f -mtime -${Days}`
+  if [[ $CheckFile = "" ]]
+    then
+	PrintOut i "No files were changed in last ${Days}"
+  else
+	PrintOut i "Preparing Exp tar with last ${Days} changed files"
+  	tar -cf $ExpTmpDir/Exp.tar `$Find . -type f -mtime -${Days}`
+  	ChkRetVal $? "Failure in creating tar file"
+  	gzip $ExpTmpDir/Exp.tar ; ChkRetVal $? "gzip $ExpTmpDir/Exp.tar" 
+  fi
+  cd $ExpTmpDir
+  tar -cf $SRepFile * ; ChkRetVal $? "$tar -cf $SRepFile *"
+  cd $WDir
+}
+
+#-----------------------------------------------------#
+# Function: OpenExp
+# Purpose : Extracts the export file
+#-----------------------------------------------------#
+function OpenExp {
+  ExpDir=`dirname $TRepFile`
+  ExpTmpDir=$ExpDir/ExpTmpDir.$TimeStamp
+  $Mkdir -p $ExpTmpDir/Exp ; cd $ExpTmpDir
+  tar -xf $TRepFile ; ChkRetVal $? "Invalid input file (expected a tar file)"
+  RepFName=`ls sdk_report ; ChkRetVal $? "Invalid input file (missing sdk__report file)"`
+
+  if [[ ! -f Exp.tar.gz ]]
+    then
+        PrintOut e "Wrong input file! The Exp file is missing ..." ; exit 1
+  else
+	gunzip Exp.tar.gz; cd $ExpTmpDir/Exp ; tar -xf ../Exp.tar
+  fi
+  
+  cd $WDir
+  TRepFile=$ExpTmpDir/$RepFName
+
+}
+
+#-----------------------------------------------------#
+# Function: PutExp
+# Purpose : handles export file for SDK version, put the
+#           Files in the destination SDK version
+# Input   : $1 - the action:
+#		 C - Copying files (which already exist) - will be moved aside and then copied
+#		 N - Copying new files
+#  	    $2 - file with listed file to work on
+#-----------------------------------------------------#
+function PutExp {
+  $Cp $2 $CpInSFile 
+  SDKPath=$SVersion
+  cd $ExpTmpDir/Exp
+  case $1 in 
+	"N") PrintOut i "Copying NEW Files from tar to SDK"
+	     for file in `cat $CpInSFile`
+	     {
+		file_dir=`dirname $file`
+		if [[ ! -d $SDKPath/$file_dir ]]
+		  then
+			$Mkdir -p $SDKPath/$file_dir
+		fi
+	     	$Cp $file $SDKPath/$file
+	     }
+	     ;;
+	"C") PrintOut i "Moving files to <file>.<date>.BCK\n\t\t\tand Copying the updated files from tar ..."
+	     for file in `cat $CpInSFile`
+	     {
+	    	 $Mv $SDKPath/$file $SDKPath/$file.`/usr/bin/date '+%Y%m%d'`.BCK
+	    	 $Cp $file $SDKPath/$file
+	     }
+	     ;;
+  esac
+
+  cd $WDir
+}
+
+#-----------------------------------------------------#
+# Function: RmInSrc
+# Purpose : Removes files from SDK source version according to 
+#           the target report file.
+# Input: $1 - List of files which exist in source only and
+#         should be removed from the SDK source area.
+#-----------------------------------------------------#
+function RmInSrc {
+  $Cp $1 $RmInSFile
+  SDKPath=$SVersion
+  cd $SDKPath
+  PrintOut i "Removing Files from SDK ...."
+  for file in `cat $RmInSFile`
+  {
+	MvCmd="$Mv $file ${file}.`/usr/bin/date '+%Y%m%d'`.BCK"
+	$MvCmd
+  }   
+
+}
+
+#-----------------------------------------------------#
+# Function: RepCmp
+# Purpose : Compare bewteen two files report
+#-----------------------------------------------------#
+function RepCmp {
+  diff $SRepFile $TRepFile | grep "^<" | awk '{print $3}' | sort -n > $DiffSrcFile
+  diff $SRepFile $TRepFile | grep "^>" | awk '{print $3}' | sort -n > $DiffTrgFile
+
+  IsDiff="N"
+  comm -12 $DiffSrcFile $DiffTrgFile > $TmpRepFile ; ChkRetVal $? "comm"
+  if [[ `cat $TmpRepFile` != "" ]] 
+   then
+	IsDiff="Y"
+	print "=============================================================" | tee -a $LogFile
+  	print "Different files (exist in both versions - Source and Target):" | tee -a $LogFile
+  	print "=============================================================" | tee -a $LogFile
+	cat $TmpRepFile | tee -a $LogFile
+        if [[ $Imp = 1 ]]
+          then
+                PutExp C $TmpRepFile
+        fi
+  fi
+ 
+  comm -23 $DiffSrcFile $DiffTrgFile > $TmpRepFile ; ChkRetVal $? "comm"
+  if [[ `cat $TmpRepFile` != "" ]] 
+   then
+        IsDiff="Y"
+	print "\n============================="               | tee -a $LogFile
+	print "Files in Source version only:"             | tee -a $LogFile
+	print "============================="               | tee -a $LogFile
+        cat $TmpRepFile | tee -a $LogFile
+        if [[ $Imp = 1 ]]
+          then
+                RmInSrc $TmpRepFile
+        fi
+  fi
+
+  comm -13 $DiffSrcFile $DiffTrgFile > $TmpRepFile ; ChkRetVal $? "comm"
+  if [[ `cat $TmpRepFile` != "" ]] 
+   then
+        IsDiff="Y"
+	print "\n============================="             | tee -a $LogFile
+        print "Files in Target version only:"               | tee -a $LogFile
+        print "============================="               | tee -a $LogFile
+        cat $TmpRepFile | tee -a $LogFile
+        if [[ $Imp = 1 ]]
+          then
+                PutExp N $TmpRepFile
+        fi
+  fi
+
+  if [[ "$IsDiff" = "Y" ]]
+    then
+	print "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+	print "The SDK diff report file can be found at:"
+	print " $LogFile"
+	print "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+    else
+	print "\n\t\t++++++++++++++++++++++++++++++++++++++++++++" | tee -a $LogFile
+	print "\t\t   The SDK of both versions is the same"        | tee -a $LogFile
+	print "\t\t++++++++++++++++++++++++++++++++++++++++++++++\n" | tee -a $LogFile
+  fi 
+
+}
+
+#-----------------------------------------------------#
+# M A I N    S E C T I O N 
+#-----------------------------------------------------#
+## G l o b a l   V a r i a b l e s ##
+WDir=`pwd`
+Success=0
+CcTime=/usr/local/ccmngr/bin/cctimestamp
+TimeStamp=`timestamp`
+MinParams=4  ; MaxParams=10
+ScriptName=`basename $0`
+
+ShowStrParams="" ; Params=$*
+Parallel=1
+
+## Shell Commands ##
+Cp=/usr/bin/cp
+Mv=/usr/bin/mv
+Gzip=/usr/local/bin/gzip
+Gunzip=/usr/local/bin/gunzip
+Rm=\rm
+Find=/usr/bin/find
+Mkdir=/usr/bin/mkdir
+Cat=/usr/bin/cat
+Touch=/usr/bin/touch
+
+## Mail
+MailAdds="" ; MailSubject="${ScriptName}"
+
+#Version
+SVersion="" ; SVer="" ; SvVer=""
+TVersion="" ; TVer="" ; TvVer=""
+
+#default report file
+SRepFile="" ; TRepFile=""
+## Log/Tmp/Entity Dir/File ##
+LogDir=${HOME}/log/$ScriptName ; $Mkdir -p $LogDir
+TmpDir=/tmp/$ScriptName.$$ ; $Mkdir -p $TmpDir 
+TmpFile=$TmpDir/$ScriptName.TmpFile.$$ ; $Touch $TmpFile
+Tmp1File=$TmpDir/$ScriptName.Tmp1File.$$ ; $Touch $Tmp1File
+TmpRepFile=$TmpDir/$ScriptName.TmpRepFile.$$
+TmpRepFile1=$TmpDir/$ScriptName.TmpRepFile1.$$
+TmpSRepFile=$TmpDir/$ScriptName.TmpSRepFile.$$
+TmpTRepFile=$TmpDir/$ScriptName.TmpTRepFile.$$
+DiffSrcFile=$TmpDir/$ScriptName.DiffSrcFile.$$
+DiffTrgFile=$TmpDir/$ScriptName.DiffTrgFile.$$
+SRepFile=$TmpDir/$ScriptName.SRepFile.$$
+TRepFile=$TmpDir/$ScriptName.TRepFile.$$
+RmInSFile=$TmpDir/$ScriptName.RmInSFile$$ ; $Touch $RmInSFile
+CpInSFile=$TmpDir/$ScriptName.CpInSFile$$ ; $Touch $CpInSFile
+
+## Trap ##
+trap  "PrintOut e 'terminated due to ctrl-c' ; ScriptExit 1" INT TERM
+
+## Input arguments ##
+CheckInput $*
+InitValidInput $*
+
+LogFile=$LogDir/$ScriptName.$TimeStamp.log
+
+##  M a i n   A l g o r i t h m  ##
+PrintOut i "$ScriptName Start working on: $Params"
+
+#Check the mode report
+case $RepMode in
+	"T") CrtRepFile $SVersion
+	     $Cp $TmpRepFile $SRepFile ; ChkRetVal $? "$Cp $TmpRepFile $SRepFile"
+	     CrtRepFile $TVersion
+             $Cp $TmpRepFile $TRepFile
+	     RepCmp
+	     if [[ $MailAdds != "" ]]
+	       then
+	     	SendMail "$CCPROJNAME - $ScriptName - SDK diff report for $SVersion & $TVersion" $MailAdds $LogFile 0
+	     fi
+	     ;;
+	"C") CrtRepFile $SVersion 
+	     $Cp ${TmpRepFile} ${SRepFile} ; ChkRetVal $? "$Cp $TmpRepFile $SRepFile"
+  	     if [[ $Days != 0 ]]
+	       then
+	   	  CrtExp $SVersion
+	     fi 
+	     print "\nThe Report log file was created as \"$SRepFile\"\n" 
+	     print "Attached the report log file" > $TmpFile
+             if [[ $MailAdds != "" ]]
+               then
+		SendMail "$CCPROJNAME - $ScriptName - SDK report for $SVersion" $MailAdds $TmpFile $SRepFile
+             fi 
+	     ;;
+	"F") if [[ $Imp = 1 ]]
+               then
+                  OpenExp
+             fi
+	     CrtRepFile $SVersion
+             $Cp $TmpRepFile $SRepFile ; ChkRetVal $? "$Cp $TmpRepFile $SRepFile"
+	     RepCmp 
+             if [[ $MailAdds != "" ]]
+               then
+		SendMail "$CCPROJNAME - $ScriptName - SDK diff report for $SVersion & $TRepFile" $MailAdds $LogFile 0
+             fi 
+	     ;;
+esac
+
+ScriptExit $Success

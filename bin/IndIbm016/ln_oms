@@ -1,0 +1,12 @@
+
+cd $HOME/bb/cord9utilities/v80_0/EclipseProjects/integration
+rm -rf .settings
+ln -s _settings .settings
+cd $HOME/bb/corD9utilities/v80_0/EclipseProjects/oms_adt
+rm -rf .settings
+ln -s _settings .settings
+cd $HOME/bb/cord9utilities/v80_0/EclipseProjects/oms_aif_project
+rm -rf .settings
+ln -s _settings .settings
+
+

@@ -1,0 +1,15 @@
+#!/bin/tcsh -f
+
+cd ${HOME}/log/XvoJar
+setenv core_home         "${SDK_CRM_HOME}"
+setenv core_jars         "${core_home}/CRM/application/installedApps/ClfyAgent/ClfyAgent.war/WEB-INF/lib"
+setenv core_others_jars  "${core_home}/CRM/application/AmdocsCRMApplication/lib"
+setenv LDR_CNTRL "MAXDATA=0x40000000@USERREGS"
+setenv LIBPATH "/usr/java5/jre/bin/classic:/usr/java5/jre/bin:${ORACLE_HOME}/lib32:${ORACLE_HOME}/lib:${ORACLE_HOME}/bin:${core_home}/CRM/application/AmdocsCRMApplication/bin:${core_home}/CRM/application/Server/dbadmin:"
+setenv LD_LIBRARY_PATH "${ORACLE_HOME}/bin"
+setenv LD_LIBRARY_PATH  "${LD_LIBRARY_PATH}:${core_home}/CRM/application/AmdocsCRMApplication/bin"
+setenv PATH "${core_home}/CRM/application/AmdocsCRMApplication:/oravl01/oracle/10.2.0.3/bin:/usr/bin:/usr/ucb:/etc:.:/opt/weblogic921/weblogic92:/usr/java5/bin:/oravl01/oracle/10.2.0.3/bin:/oravl01/oracle/10.2.0.3/lib:/usr/local/bin:/usr/local:/usr/bin:${core_home}/CRM/application/AmdocsCRMApplication:${core_home}/CRM/application/Server/dbadmin:${core_home}/CRM/application/AmdocsCRMApplication/lib:/mtluser1/mtl/dev/wadm/ant1.6.5/bin:/mtluser1/mtl/dev/wadm/Genesis:/mtluser1/mtl/dev/wadm/bin"
+setenv TMP       "./tmpdir"
+setenv GC_LANG   "English_UnitedStates.Windows-1252@Default" 
+setenv CLASSPATH  "${WL_HOME}/lib/weblogic.jar:${JAVA_HOME}/lib/tools.jar:$core_others_jars/ClfyCore.jar:$core_jars/velocity-dep-1.4.jar:/uer/java5/lib/tools.jar:$core_jars/jdom.jar:$core_others_jars/ojdbc14.jar:./acfglib.jar"
+java -Xms1024M -Xmx1024M -cp $CLASSPATH  com.clarify.igb.tools.XvoGen -user sa -password sa -o $TMP -jardir "${CCMPA}/lib"  -deleteall

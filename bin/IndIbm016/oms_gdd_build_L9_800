@@ -1,0 +1,13 @@
+#!/usr/local/bin/tcsh
+
+source /etc/csh.login
+source /etc/csh.cshrc
+set_prod -P oms -r v800 -c Ordering -m ord -p ordgdd800 -v 64OG -b cord9gdd 
+refresh -XML -execute -Bb $CCBB -machine $HOST -v $CCPRODVERNUM
+hbuild_proj -p ordgdd800 -c
+harccbuild -p ordgdd800 -v 64OG -a Daily -t `timestamp`  -DB 
+CCSwitch -p ordgdd800  -vrt 64OG
+cdlog
+echo "**********************************"
+echo "Please check last log for error"
+echo "**********************************"

@@ -1,0 +1,40 @@
+#!/usr/local/bin/tcsh -f
+
+
+
+set opt = $1
+set parm_opt = /tmp/opt.`timestamp`
+set all_parm_opt = /tmp/all_parm_opt.`timestamp`
+echo "1 2 14 15 16 18 19" > $all_parm_opt
+set STEPS = `cat $all_parm_opt`
+
+set opt_line = `cat option_conf | grep -w $1 | awk -F: '{print $1}'`
+echo "opt_line $opt_line"
+echo $STEPS
+
+set opt_to_run = `cat $all_parm_opt | cut -b 4-`
+echo $opt_to_run opt_to_run
+#echo "1 2 14 15 16 18 19" | cut -b 2
+
+
+foreach Step ( $STEPS )
+#echo $Step
+end
+#echo $#
+#shift
+
+
+foreach arg ($*)
+#        echo "$arg"
+end
+
+
+echo Starting the test goto script
+
+#goto DBStage
+#echo this is btween the label and the call to DBStage lable
+
+#DBStage:
+
+#echo this is DBStage lable
+

@@ -1,0 +1,109 @@
+#!/usr/bin/tcsh -f
+
+setenv USER $LOGNAME
+setenv user $USER
+setenv SHELL /usr/local/bin/tcsh
+source /sdkhome/sdk/SDKRoot/.ccmngr_cshrc
+source /sdkhome/sdk/SDKRoot/.ccmngr_login
+
+set VER = $1
+set PROD = $2
+set VVER = v"$1"
+if ( $VER == "-h" ) then
+	echo "\nUsage   : ccPRODzip < Version Number > <Product Name>"
+        echo "Example : ccPRODzip 750 amss \n"
+        exit
+endif
+if ( ! -d $HOME/"$VVER" ) then
+        echo "\nVersion $VVER doesn't exist under CC home directory\n"
+        echo "Usage   : ccPRODzip < Version Number > <Product Name>"
+        echo "Example : ccPRODzip 750 amss \n"
+        exit
+endif
+if ( $PROD != "amss" && $PROD != "oms" ) then
+	echo "\nProduct $PROD doesn't exist , please choos amss or oms \n"
+        echo "Usage   : ccPRODzip < Version Number > <Product Name>"
+        echo "Example : ccPRODzip 750 amss"
+        exit
+endif
+
+set VERTMP = `echo $VVER | cut -c 1-3`
+set VERTMP2 = `echo $VVER | cut -c 4`
+set VVE_R = `echo $VERTMP"_"$VERTMP2`
+set PROD_NAME=$PROD 
+set LoginUser=`echo $USER | awk -F_ '{print $2}'`
+cd ~$LoginUser
+set CC_MASTER=`pwd`
+set CC_MASTER_MB=$CCPROJECTHOME
+set suffix=$VER
+set Proj_Var="V64OG"
+set cc_ver="$VVE_R"
+set st_server_names=""
+
+# Create the storage files for rcp to JAVA STORAGES
+# -------------------------------------------------
+
+if ( $PROD_NAME == "oms" ) then
+	setenv STORAGE_HOME  			$CC_MASTER/push_ORD/$suffix
+else if ( $PROD_NAME == "amss" ) then
+	setenv STORAGE_HOME  			$CC_MASTER/push_AMSS/$suffix
+endif
+
+mkdir -p $STORAGE_HOME
+
+if ( $PROD_NAME == "amss" ) then
+	set build_number=`$HARVESTDIR/bin/buildCounter Daily $VER 0 amss | awk -F: '{print $2}' | awk -F" " '{print $1}'`
+	set DATA_HOME="$CC_MASTER/push_AMSS/$VER"
+#	rm -f $STORAGE_HOME/AMSS_* >& /dev/null
+	find $STORAGE_HOME/AMSS_* -type f -mtime +3 | xargs rm -f
+
+	cd $CC_MASTER_MB/proj/c3ecrbe$suffix$Proj_Var
+	gtar zcf $STORAGE_HOME/AMSS_csc_${suffix}_$build_number.tar.gz csc_${CSCVER}
+	cd $DATA_HOME
+	rm -f csc_${CSCVER}
+	ln -s $CC_MASTER_MB/proj/c3ecrbe"$VER"V64OG/csc_${CSCVER} csc_${CSCVER}
+	set list_xc_sources = ()
+	foreach bb ( cecr3be cbe3_deploy cecr3fe cecare3app cecr3gdd cecr3aif cecr3adt cecr3wf )
+		echo $bb
+		rm -f $PROD_NAME.harvest
+		cd ~/bb
+		find */$VVE_R/ | grep $bb > $DATA_HOME/$PROD_NAME.harvest
+		find */$VVE_R/ -name ".*" | grep $bb >> $DATA_HOME/$PROD_NAME.harvest
+		cd $DATA_HOME
+		set list_xc_sources = ( $list_xc_sources `grep ^$bb/$cc_ver $PROD_NAME.harvest | awk '{print $1}'` )
+		cd $STORAGE_HOME
+	end
+	cd $CC_MASTER/bb
+	tar zcf $STORAGE_HOME/AMSS_bb_sources_${suffix}_$build_number.tar $list_xc_sources
+	cd $DATA_HOME
+	rm -Rf bb
+	mkdir bb
+	cd bb
+	tar xvf $STORAGE_HOME/AMSS_bb_sources_${suffix}_$build_number.tar
+	cd $DATA_HOME
+	gzip $STORAGE_HOME/AMSS_bb_sources_${suffix}_$build_number.tar
+
+	set files_to_ftp = ( AMSS_csc_${suffix}_$build_number.tar.gz AMSS_bb_sources_${suffix}_$build_number.tar.gz )
+else if ( $PROD_NAME == "oms" ) then
+	find $STORAGE_HOME/ORD_* -type f -mtime +2 | xargs rm -f
+	set build_number=`$HARVESTDIR/bin/buildCounter Daily $VER 0 oms | awk -F: '{print $2}' | awk -F" " '{print $1}'`
+	set DATA_HOME="$CC_MASTER/push_ORD/$VER"
+	set list_xc_sources = ()
+	cd ~/bb
+	set BB = `ls | grep ord | awk -F/ '{print $1}'`
+	foreach bb ( `echo $BB` )
+		echo $bb	
+		rm -f $DATA_HOME/$PROD_NAME.harvest
+		cd ~/bb
+		find */$VVE_R/ | grep $bb > $DATA_HOME/$PROD_NAME.harvest
+                find */$VVE_R/ -name ".*" | grep $bb >> $DATA_HOME/$PROD_NAME.harvest
+                cd $DATA_HOME
+                set list_xc_sources = ( $list_xc_sources `grep ^$bb/$cc_ver $PROD_NAME.harvest | awk '{print $1}'` )
+                cd $STORAGE_HOME
+	end
+	cd $CC_MASTER/bb
+	tar zcf $STORAGE_HOME/ORD_bb_sources_${suffix}_$build_number.tar $list_xc_sources
+	cd $DATA_HOME
+	gzip $STORAGE_HOME/ORD_bb_sources_${suffix}_$build_number.tar	
+endif
+

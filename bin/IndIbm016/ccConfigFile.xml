@@ -1,0 +1,168 @@
+<ccConfig>
+		<scriptname name="CCMSS_BuildStatus.pl">
+		    <product name="lel">
+		    		<version name="750">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>ABP</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>EN7.5</CCPRODTYPE>
+		      			<CCPROD>lel</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+		      	<version name="760">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>ABP</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>EN7.5</CCPRODTYPE>
+		      			<CCPROD>lel</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+                        <version name="770">
+                                        <VERSIONCONFIG>
+                                                <VARIANT>64OG</VARIANT>
+                                        <CORE_PRODUCT>ABP</CORE_PRODUCT>
+                                        <CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+                                        <CCPRODTYPE>EN7.5</CCPRODTYPE>
+                                        <CCPROD>lel</CCPROD>
+                                        <ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+                                        <MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+                                        <ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+                                        <WARNPHRASE>warning</WARNPHRASE>
+                                </VERSIONCONFIG>
+                        </version>
+		    </product>
+		    <product name="amss">
+		    		<version name="750">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>AMSS</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>AMSS</CCPRODTYPE>
+		      			<CCPROD>amss</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+		      	<version name="760">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>AMSS</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>AMSS</CCPRODTYPE>
+		      			<CCPROD>amss</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+                        <version name="770">
+                                        <VERSIONCONFIG>
+                                                <VARIANT>64OG</VARIANT>
+                                        <CORE_PRODUCT>AMSS</CORE_PRODUCT>
+                                        <CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+                                        <CCPRODTYPE>AMSS</CCPRODTYPE>
+                                        <CCPROD>amss</CCPROD>
+                                        <ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+                                        <MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+                                        <ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+                                        <WARNPHRASE>warning</WARNPHRASE>
+                                </VERSIONCONFIG>
+                        </version>
+		    </product>
+		    <product name="crm">
+		    		<version name="750">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>CRM</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>CRM</CCPRODTYPE>
+		      			<CCPROD>crm</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+		      	<version name="760">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>CRM</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>CRM</CCPRODTYPE>
+		      			<CCPROD>crm</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+                        <version name="770">
+                                        <VERSIONCONFIG>
+                                                <VARIANT>64OG</VARIANT>
+                                        <CORE_PRODUCT>CRM</CORE_PRODUCT>
+                                        <CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+                                        <CCPRODTYPE>CRM</CCPRODTYPE>
+                                        <CCPROD>crm</CCPROD>
+                                        <ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+                                        <MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+                                        <ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+                                        <WARNPHRASE>warning</WARNPHRASE>
+                                </VERSIONCONFIG>
+                        </version>
+		    </product>
+		    <product name="oms">
+		    		<version name="750">
+		    			<VERSIONCONFIG>
+		    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>OMS</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>EN7.5</CCPRODTYPE>
+		      			<CCPROD>oms</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+		      	<version name="760">
+		    			<VERSIONCONFIG>
+	    				<VARIANT>64OG</VARIANT>
+		      			<CORE_PRODUCT>OMS</CORE_PRODUCT>
+		      			<CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+		      			<CCPRODTYPE>EN7.5</CCPRODTYPE>
+		      			<CCPROD>oms</CCPROD>
+		      			<ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+		      			<MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+		      			<ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+		      			<WARNPHRASE>warning</WARNPHRASE>
+		      		</VERSIONCONFIG>
+		      	</version>
+                        <version name="770">
+                                        <VERSIONCONFIG>
+                                        <VARIANT>64OG</VARIANT>
+                                        <CORE_PRODUCT>OMS</CORE_PRODUCT>
+                                        <CCPROJECTHOME>/jsthome/jst/ccjst/mb_ccjst</CCPROJECTHOME>
+                                        <CCPRODTYPE>EN7.5</CCPRODTYPE>
+                                        <CCPROD>oms</CCPROD>
+                                        <ACCOUNT_RELEASE>1</ACCOUNT_RELEASE>
+                                        <MANDATORYPRODUCT>Y</MANDATORYPRODUCT>
+                                        <ERRORPHRASE>Unsatisfied,No rule</ERRORPHRASE>
+                                        <WARNPHRASE>warning</WARNPHRASE>
+                                </VERSIONCONFIG>
+                        </version>
+		    </product>
+		</scriptname>
+</ccConfig>

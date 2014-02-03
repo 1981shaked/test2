@@ -1,0 +1,7 @@
+#/usr/local/bin/tcsh -f
+
+
+
+echo "this is a test"
+
+touch /tmp/test_umb.`$HOME/bin/timestamp`

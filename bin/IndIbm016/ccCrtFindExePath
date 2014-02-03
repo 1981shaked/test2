@@ -1,0 +1,100 @@
+#!/usr/local/bin/tcsh
+
+################################################################################
+#
+# Name    	    ccCrtFindExePath
+# Purpose 	   1. Divided the Linkage command for debug Purpose
+#           	   2. Display the PATH/Libs from the Linkage command (-L or -l)
+#
+# General Flow	      For Divided the command :
+#                  - Run the script on the log direcory .
+#                  - Use 4 as 3rd parameter.
+#                  - The LN command will be created aunder /tmp/<EXE>_LN
+#                  - cd to deb area and run the command /tmp/<EXE>_LN
+#                     For Displaying the PATH/Libs (-L or -l) just use option 1-3 
+#              
+# Assumptions  	   : n/a
+# Dependencie      : None
+# Usage	           : <Log file name> <Exe name> <mode>    	
+# Author           : Dror Baruch (20/07/2009)
+#
+################################################################################
+
+
+#=======
+# Usage
+#=======
+if ($#argv != 3) then
+echo "Usage: `basename ${0}` <Log file name> <Exe name> <mode>"
+echo "  "
+echo "  "
+echo "Example: `basename ${0}` build.log.20090419_194601 blidberr 1"
+
+echo mode option :
+echo "1 For LN path (-L)and libs (-l)"
+echo "2 For LN path (-L)"
+echo "3 For libs name (-l)"
+echo "4 Divided the Link command to /tmp"
+
+
+echo "  "
+echo "  "
+
+exit (1)
+endif
+
+ if ( $3 == 1 ) then
+ echo you enter 1 for both LN path and libs name
+
+cat  $1 | grep "/bin/${2}" | awk -F= -v RS="-L" '{print $NF}'  | perl -pe 's|L/|/|g'
+
+else
+
+if ( $3 == 2 ) then
+echo "you enter 2 for LN path (-L)"
+
+cat  $1 | grep "/bin/${2}" | awk -F= -v RS="-L" '{print $NF}'  | grep "L/"|perl -pe 's|L/|/|g'
+
+else 
+if ( $3 == 3 ) then 
+echo "you enter 3 for  libs name (-l)"
+
+cat  $1 | grep "/bin/${2}" | awk -F= -v RS="-L" '{print $NF}'  | grep -v "L/"|grep "^l"
+
+
+
+else
+if ( $3 == 4 ) then
+echo "you enter 4 for  LN command"
+set exe_name = $2
+
+cat  $1 | grep "/bin/${2}"|grep -v cobcc|grep -v cob32|grep -v "${exe_name}:"  >! /tmp/${exe_name}_LN
+
+
+set file_name = /tmp/${exe_name}_LN
+set bin_path = `cat /tmp/${exe_name}_LN | awk -Fbin/${exe_name} '{print $1}' | awk -F-o '{print $2}'`
+set replace_bin = "${bin_path}bin/${exe_name}"
+set replace_with_tmp = "/tmp/${exe_name}"
+
+echo $bin_path
+
+#perl -pe 's |${bin_path}bin/${exe_name}|/tmp/${exe_name}|g' -pi /tmp/${exe_name}_LN 
+
+#perl -pe 's |'$replace_bin'|'$replace_with_tmp'|g' -pi  $file_name
+
+chmod 755 /tmp/${2}_LN
+echo LN command of $2 is /tmp/${2}_LN
+echo please run the commnd from the deb area
+echo e.g : "cddeb ; /tmp/${2}_LN"
+
+else
+
+echo Invalid mode option, plese type 1-4 only
+
+endif
+endif
+endif
+endif
+
+
+

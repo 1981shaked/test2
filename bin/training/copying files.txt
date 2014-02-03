@@ -1,0 +1,10 @@
+XtraC server-linhb248;haroper7 password-Lumbak_3; harvest7 password-Lumbak_3
+
+
+
+foreach f ( $x )
+ set list=`find . -type f -name $f | grep -v 20100815`
+ foreach l ( $list )
+  echo \cp -f  /cpcuser1/cpc/aimsys/genadm/storage/CRM/PB6/PB_17082010/6/$f $l >> t.txt
+ end
+end

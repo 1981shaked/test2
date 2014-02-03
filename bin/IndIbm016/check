@@ -1,0 +1,185 @@
+#!/usr/bin/ksh
+
+
+#
+# Remember $0
+#
+
+commandname=`basename $0`
+
+#
+# Create a timestamp
+#
+
+timestamp=`timestamp`
+
+#
+# Create tmp logfile
+#
+
+logfiletmp=log.checkin.tmp 
+touch $logfiletmp
+
+
+#
+# Usage
+#
+
+function Usage
+{
+  echo ""
+  echo "Usage:"
+  echo "$commandname [-h]   : prints usage"
+  echo "$commandname <mode> <version> <package name> <files>"
+  echo " mode is out, in, rem or info"
+  echo " files must be in correct place in cc ie. under bb/<bbname>/vXX-X/..."
+  echo " Version must be in the form 700_CT : no 'v' ! not like '70_0_CT' !"
+  echo " Version may also be 'Infra'"
+  echo ""
+}
+
+#
+# Check arguments
+#
+
+if [[ $1 = "-h" ]] ; then
+  Usage
+  exit 0
+fi
+
+if [[ $# -lt  4 ]]; then
+  echo "Not enough arguments" 
+  Usage
+  exit 0
+fi
+
+#
+# Check HARVESTDIR env variable
+#
+
+if [ ! "${HARVESTDIR}" ] ; then
+  echo "ERROR: Environment variable HARVESTDIR is not defined"
+  exit 1
+fi
+
+#
+# Set variables
+#
+
+mode=$1
+shift
+
+broker=$BROKERNAME
+
+echo "Using broker $broker"
+
+version=$1
+shift 
+
+pkgname=$1
+shift
+
+user=juliat	
+passwd=unix23
+
+if [[ $version = "Infra" ]] ; then
+  taskname="Infra"
+  statename="Infra"
+else
+  taskname="Tasks $version"
+  statename="Development"
+fi
+
+
+#
+# Check that files exist and generate clientpaths
+#
+
+set -A files $* #set the remaining command line arguments into the files array
+
+count=0
+for file in ${files[@]}
+do
+  fullpathname=`pwd`"/"$file
+  file_srcs[$count]=$fullpathname
+  file_src_base=`basename $fullpathname`
+  temp=`echo $fullpathname | sed "s/\/\.\//\//g"`            # replace any /./ with /
+  if [[ $version = "Infra" ]] ; then
+    temp=`echo $temp | sed "s%.*/${USER}/%/%g"`             # remove everything from home and before
+    temp=`echo $temp | sed "s_.*/bb/_/_g"`                  # remove everything from bb and before
+  else
+    temp=`echo $temp | sed "s/v[0-9]\{2\}_[0-9][^\/]*\///g"` # remove version
+    temp=`echo $temp | sed "s_.*/bb/_/_g"`             # remove everything from bb and before
+  fi
+  temp=`dirname $temp`
+  echo "fullpathname = $fullpathname"
+  echo "viewpath = $temp"
+  viewpaths[$count]=$temp
+  count=$count+1
+  if [[ ! -f ${fullpathname} ]]; then
+      echo "Error: ${fullpathname} is not present."
+      exit 1;
+  fi
+done
+
+#
+# For each file, checkout / checkin
+#
+
+count=0
+for file_src in ${file_srcs[@]}
+do
+
+  viewpath=${viewpaths[$count]}
+  count=$count+1
+
+  if [[ $mode = "out" ]] ; then
+    #
+    # Checkout the file 
+    #
+  
+    EVALCMD="$HARVESTDIR/bin/hco -b \"$broker\" -usr $user -pw $passwd -ro -vp $viewpath -st \"$statename\" -en \"$taskname\" -p \"$pkgname\" -pn \"CheckOut for Upload\" -o $logfiletmp -cp `dirname $file_src` `basename $file_src`"
+    eval $EVALCMD
+    #echo $EVALCMD
+    cat $logfiletmp 
+  fi
+
+  if [[ $mode = "in" ]] ; then
+    #
+    # Checkin the file
+    #
+    EVALCMD="$HARVESTDIR/bin/hci -b \"$broker\" -usr $user -pw $passwd -ur -vp $viewpath -st \"$statename\" -en \"$taskname\" -p \"$pkgname\" -pn \"CheckIn for Upload\" -o $logfiletmp -cp `dirname $file_src` `basename $file_src`"
+    eval $EVALCMD
+    #echo $EVALCMD
+    cat $logfiletmp
+  fi
+
+  if [[ $mode = "info" ]] ; then
+    #
+    # Get info on file
+    #
+    EVALCMD="$HARVESTDIR/bin/hlv -b \"$broker\" -usr $user -pw $passwd -vp $viewpath -st \"$statename\" -en \"$taskname\" -o $logfiletmp `basename $file_src`"
+    eval $EVALCMD
+    #echo $EVALCMD
+    cat $logfiletmp
+  fi
+
+  if [[ $mode = "rem" ]] ; then
+    #
+    # Remove the file
+    #
+    EVALCMD="$HARVESTDIR/bin/hri -b \"$broker\" -usr $user -pw $passwd -vp $viewpath -st \"$statename\" -en \"$taskname\" -p \"$pkgname\" -o $logfiletmp `basename $file_src`"
+    eval $EVALCMD
+    echo $EVALCMD
+    cat $logfiletmp
+  fi
+
+done
+
+#
+# Delete tmp file
+#
+
+\rm -f $logfiletmp
+
+

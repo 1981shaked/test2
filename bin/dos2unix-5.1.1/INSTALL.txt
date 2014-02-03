@@ -1,0 +1,79 @@
+
+BASIC INSTALLATION
+
+    To build the program type:
+
+        make
+
+
+    To install:
+
+        make install
+
+
+    Clean:
+
+        make clean
+
+
+    Maintainer clean (for developers):
+
+        make maintainer-clean
+
+
+INSTALLATION NAMES
+
+    By default the 'install' target will install the program in
+    /usr/bin, the language files in /usr/share/locale
+    and the man page in /usr/share/man. You can specify an
+    installation prefix other than /usr by modifying the
+    'prefix' variable. An Example:
+
+        make prefix=$HOME clean all
+        make prefix=$HOME install
+
+NATIVE LANGUAGE SUPPORT
+
+    Native Language Support (NLS) is by default enabled.
+    To disable NLS add ENABLE_NLS=. Example:
+
+        make clean install ENABLE_NLS=
+
+WINDOWS PORT
+
+    To compile a version for Windows, get the Mingw compiler
+    <http://www.mingw.org>, and use makefile mingw.mak:
+
+        make -f mingw.mak clean install
+
+WINDOWS 64 BIT PORT
+
+    To compile a version for Windows, get the Mingw-w64 compiler
+    <http://mingw-w64.sourceforge.net>, and use makefile mingw64.mak:
+
+        make -f mingw64.mak clean install
+
+DOS PORT, 32 BIT
+
+    To compile a version for DOS, get the DJGPP compiler
+    <http://www.delorie.com/djgpp/>, and use makefile djgpp.mak:
+
+        make -f djgpp.mak clean install
+
+DOS PORT, 16 BIT
+
+    To compile a version for DOS, use the Borland C compiler 3.1 or 4.0,
+    and use makefile bcc.mak:
+
+        make -f bcc.mak clean
+        make -f bcc.mak
+
+    Or use the OpenWatcom compiler <http://www.openwatcom.org>.
+
+        wmake -f watcom16.mak clean
+        wmake -f watcom16.mak
+
+OS/2 PORT
+
+        make -f os2.mak clean install
+

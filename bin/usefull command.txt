@@ -1,0 +1,60 @@
+mailx -s "Country" tzvig@amdocs.com country.txt
+
+Replace string 80_1 insde a files
+perl -e 's/80_1/80_2/g' -pi *
+
+checking progress of build
+snv899!mb_cctls:~ [448]> find ./log.*692*/*/ -type f | grep 201103 | wc –l
+
+Sorting  the hight heavy FS
+df -k | sort -k 5r | head -40    //sort fs according to filed #5.
+
+Display filed 1 and 3 only
+cat country.txt | awk -F"," '{print $1,$3}'  
+cut -d, -f 1,3 country.txt 
+
+Displaying only  Modules:
+show_str.pl -P lel -v v62_3 -t 64 | cut -d : -f 2 | sort -u  //displaying the only modules
+
+
+
+Ensamble:
+
+source Line/v01/.line
+
+Checking file:
+dhdtlgcc!ccsbms:~/RCS/bb/sbmscsm/cs/src [65]> rlog pcs_handle_soc_for_ban.c | m
+
+release files:
+dhdtlgcc!ccsbms:~/bb/sbmscsm/v1110_0/cs/src [64]> ccunlock -v v1110_0 pcs_handle_soc_for_ban.c
+
+
+Check build number:
+more data/Ident/buildCounter.v1110_0
+
+Report: On hpp717a:
+/home/cc/ccsbms/bin/make_report_new v1102_0 all
+
+dhdtlgcc!ccsbms:~ [114]> execute_release -v v1102_0 -i 1
+
+
+RCS in proj area:
+
+co -u <file> //Check our -UnLock (with permision 444)
+co -l <file> //Check our -Lock (for update files with 644)
+ci <file> //Check in the file after update (co -l) after ci the file is removed from the FS into the repostiry
+after check in run co -u 
+rlog <file> ~ hcclog in XC
+
+RCS in bb area
+
+ccget -u <file> //Check our -UnLock (with permision 444)
+ccget -l <file> //Check our -Lock (for update files with 644)
+ccput <file> //Check in the file after update (co -l) after ci the file is removed from the FS into the repostiry
+after check in run ccget -u 
+cclog <file> ~
+
+
+
+grep BUILD log*/*20110619_075610 | grep -v REPORT
+

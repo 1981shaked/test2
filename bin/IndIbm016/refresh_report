@@ -1,0 +1,178 @@
+#!/bin/ksh 
+
+#===================================================================================
+# Name : refresh_report
+# Desrciption : Checking the last refresh log per given version.
+#               Informs about errors and new refreshed files in the refresh process
+#               Report sent to given e-mail addresses
+#
+# Usage : refresh_report <java/Unix/online> <version> [<mail_address>] 
+# Author : Malka Sulimani
+#===================================================================================
+
+############ Checking input ##################
+
+if  [ $# != 2 -a $# != 2 ]  ; then   
+   echo "ERROR : Usage:  refresh_report <version> [<mail_address>]"
+   echo "Example: refresh_report 311 nbuildreports@amdocs.com"
+   exit
+fi
+
+
+Mail="N"
+if  [ $# -eq 2 ]  ; then
+   Mail="Y"
+   MailList=$2
+fi
+
+ver=$1
+refresh_dir=~/log.harvest/$ver
+if [ ! -d $refresh_dir ]
+then
+   echo "   There is no folder ~/log.harvest/$ver"
+   echo "     Please check if you typed the correct version"
+   exit 1
+fi
+
+temp=`find $refresh_dir/. -type f -name "manager*.log"`
+if [ "$temp" = "" ]
+then
+   echo "No refresh was performed in $ver "
+   exit 1
+fi
+
+#####################################################
+
+moduleFile="$HOME/product/${CCPROD}/v${ver}/config/${CCPROD}_v${ver}_modbo.dat"
+
+if [[ ! -f $moduleFile ]] 
+then
+  echo "\n   File $moduleFile not exist.\n   Please create this file\n"
+  exit 0
+fi
+
+#count_bb = 0
+
+log_refresh_file=/tmp/log_refresh_sum_$ver
+rm -f $log_refresh_file
+touch $log_refresh_file
+
+log_deleted_file=/tmp/log_deleted_sum_$ver
+rm -f $log_deleted_file
+touch $log_deleted_file
+
+log_unknown_file=/tmp/log_unknown_sum_$ver
+rm -f $log_unknown_file
+touch $log_unknown_file
+
+log_errorlist_file=/tmp/log_errorlist_sum_$ver
+rm -f $log_errorlist_file
+touch $log_errorlist_file
+
+moduleList=`cat $moduleFile | /usr/bin/awk '{print $2}' | sort -n`
+for module in $moduleList
+do
+  last_refresh_file=`ls -tr ~/log.harvest/$ver/$module/manager*.log |tail -1`
+
+  temp=`more $last_refresh_file | grep "checked out to"`
+  if [ "$temp" != "" ]
+  then
+    more $last_refresh_file | grep "checked out to" | /usr/bin/awk -F " out to" '{print $2}' >> $log_refresh_file
+  fi
+
+  temp=`more $last_refresh_file | grep ": Deleting"`
+  if [ "$temp" != "" ]
+  then
+    more $last_refresh_file | grep ": Deleting" >> $log_deleted_file
+  fi
+
+  temp=`more $last_refresh_file | grep "Unknown file" | grep -v /bb_profile | grep -v .lis | grep -v _generated/`
+  if [ "$temp" != "" ]
+  then
+    more $last_refresh_file | grep "Unknown file" | grep -v /bb_profile | grep -v .lis | grep -v _generated/ >> $log_unknown_file
+  fi
+
+  temp=`more $last_refresh_file | grep -i Error: | grep -v ". It is deleted."`
+  if [ "$temp" != "" ]
+  then
+    more $last_refresh_file | grep -i Error: | grep -v ". It is deleted." >> $log_errorlist_file
+  fi
+  
+#  count_bb=count_bb + `grep "Checking out to" $log_refresh_file | wc -l`
+  
+done
+
+########################################################
+
+log_file=/tmp/refresh_sum_$ver.`timestamp`
+rm -f $log_file
+touch $log_file
+
+echo  "================================="  > $log_file
+echo  " Refresh files list:"              >> $log_file
+echo  "=================================" >> $log_file
+
+if [[ -s "$log_refresh_file" ]]
+then 
+   more $log_refresh_file >> $log_file
+else
+   echo "No files were refreshed in the refresh process!" >> $log_file
+fi
+
+echo  "\n=================================" >> $log_file
+echo  " Deleted files list:"                >> $log_file
+echo  "================================="   >> $log_file
+
+if [[ -s "$log_deleted_file" ]]
+then 
+   more $log_deleted_file >> $log_file
+else
+   echo "No files were deleted in the refresh process!" >> $log_file
+fi
+
+echo  "\n=================================" >> $log_file
+echo  " Unknown files list:             "   >> $log_file
+echo  "================================="   >> $log_file
+
+if [[ -s "$log_unknown_file" ]]
+then 
+   more $log_unknown_file >> $log_file
+else
+   echo "No Unknown files were found in the refresh process!"  >> $log_file
+fi
+ 
+echo  "\n=================================" >> $log_file
+echo  " Errors list:                    "   >> $log_file
+echo  "================================="   >> $log_file
+
+if [[ -s "$log_errorlist_file" ]]
+then 
+   more $log_errorlist_file >> $log_file
+else
+   echo "No errors were found in the refresh process!"  >> $log_file
+fi
+
+count_bb=`more $log_refresh_file | /usr/bin/awk -F "bb" '{print $2}' | /usr/bin/awk -F "/" '{print $2}' | sort -u |wc -l`
+
+echo  "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++"    >> $log_file
+echo  " Total BB which were participated in the refresh => $count_bb" >> $log_file
+echo  "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"      >> $log_file
+ 
+#count_file=`grep "checked out to" $log_refresh_file | wc -l`
+count_file=`more $log_refresh_file | wc -l`
+
+echo  "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++"    >> $log_file
+echo  " Total refreshed files => $count_file"                         >> $log_file
+echo  "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"      >> $log_file
+
+count_file=`grep ": Deleting" $log_deleted_file | wc -l`
+
+echo  "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++"    >> $log_file
+echo  " Total deleted files => $count_file"                         >> $log_file
+echo  "++++++++++++++++++++++++++++++++++++++++++++++++++++++++"      >> $log_file
+
+if  [ "$Mail" = "N" ]  ; then
+   echo "You can find the log file at: $log_file"
+else
+   mailx -s "Refresh report for ver $ver " "$MailList" < $log_file
+fi

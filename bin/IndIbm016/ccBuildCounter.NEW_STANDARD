@@ -1,0 +1,28 @@
+#! /usr/local/bin/tcsh -f
+
+if ($# < 3) then
+  echo "\n    Usage: "
+  echo "\n      `basename $0` <type> <version> 0 [product] "
+  echo "\n\t`basename $0` Daily 750 0 oms "
+  exit(1)
+endif
+
+set product = $4
+set type = $1
+set Version = $2
+
+setenv CCPROJECTHOME $HOME
+
+set buildNumLog = "$HOME/product/${product}/v${Version}/config/${product}_build.number"
+
+set IcmBN = `$HARVESTSERVERDIR/bin/buildCounter $type $Version 0 |cut -d ":" -f2`
+set ProdBN = `$HARVESTSERVERDIR/bin/buildCounter $type $Version 0 $product |cut -d ":" -f2`
+set today = `/bin/date '+%c'`
+
+echo "build.date=#$today" >! $buildNumLog
+echo "build.version=v${Version}" >> $buildNumLog
+echo "ICM.build.number=$IcmBN" >> $buildNumLog
+echo "PRODUCT.build.number=$ProdBN" >> $buildNumLog
+
+cp -f  $buildNumLog ${CCWSCA}
+

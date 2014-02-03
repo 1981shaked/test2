@@ -1,0 +1,26 @@
+#!/usr/local/bin/tcsh
+
+set BB = $1
+if ( ! -d ~/bb/$BB ) then
+	echo "\nThe BB $BB doesn't exist." 
+	echo "\nUsage : SP < BB Name > [ Version ]\n"
+	exit
+endif
+set VER = "$2"
+if ( $VER == "" ) then
+	set VER = $CCVER
+else
+	set VVER = v"$VER"
+	set VVER1 = `echo $VVER | cut -c1-3`
+	set VVER2 = `echo $VVER | cut -c4-4`
+	set VVE_R = `echo $VVER1"_"$VVER2`
+	if ( ! -d ~/bb/$BB/$VVE_R ) then
+		echo "\nThe Version $VER doesn't exist for $BB."
+		echo "\nUsage : SP < BB Name > [ Version ]\n"
+        	exit
+	endif
+	set VER = $VVE_R
+endif
+
+set Proj = `cat ~/bb/$BB/$VER/projs_lst`
+source $CCMNGRHOME/bin/do_set_prod_script $Proj $BB

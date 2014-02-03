@@ -1,0 +1,38 @@
+#!/usr/bin/tcsh -fx
+
+if ( `echo $HOST | cut -c 1-3` != "ind" ) exit
+
+setenv GC_LANG "English_UnitedStates.Windows-1252@Default"
+
+set schema_file=db/schema/objectSchema.xml
+
+if ( -f  ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin/clarify.env.${CCPRODVERNUM} ) then
+	\cp -f ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin/clarify.env.${CCPRODVERNUM} ${SDK_CRM_HOME}/CRM/application/AmdocsCRMApplication/bin/clarify.env
+endif
+
+if ( -f  ${SDK_CRM_HOME}/CRM/application/Server/dbadmin/clarify.env.${CCPRODVERNUM} ) then
+	\cp -f ${SDK_CRM_HOME}/CRM/application/Server/dbadmin/clarify.env.${CCPRODVERNUM} ${SDK_CRM_HOME}/CRM/application/Server/dbadmin/clarify.env
+endif
+
+set db_user=`grep -w login_name $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin/clarify.env | awk -F= '{print $2}'`
+set db_pass=`grep -w db_password $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin/clarify.env | awk -F= '{print $2}'`
+set db_inst=`grep -w db_name $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin/clarify.env | awk -F= '{print $2}'`
+set jdbc_db_server=`grep -w jdbc_db_server $SDK_CRM_HOME/CRM/application/AmdocsCRMApplication/bin/clarify.env | awk -F= '{print $2}'`
+
+if ( -f $HOME/bb/ccrm9Configuration/$CCVER/db/schema/scripts/pre_schema_mgr.sql ) then
+                  sqlplus -s $db_user/$db_pass@$db_inst < $HOME/bb/ccrm9Configuration/$CCVER/db/schema/scripts/pre_schema_mgr.sql
+endif
+
+setenv CRM_HOME   $SDKHOME/$SDKRELEASE/modules/crm/CRM
+setenv CLARIFY_DIR       $CRM_HOME/application/Server/dbadmin
+
+setenv CLASSPATH $CLARIFY_DIR/ClfySchemaMgr.jar:$CLARIFY_DIR/ojdbc14.jar:$CLARIFY_DIR/orai18n.jar
+
+setenv LD_LIBRARY_PATH   "${CLARIFY_DIR}:$ORACLE_HOME/lib32:/usr/lib"
+setenv SHLIB_PATH $LD_LIBRARY_PATH
+setenv PATH       "${PATH}:$CLARIFY_DIR"
+
+echo "$JAVA_HOME/bin/java -cp $CLASSPATH com.clarify.schemamgr.SchemaMgr -user_name $db_user -password $db_pass -db_server $jdbc_db_server -db_name $db_inst -replace $HOME/bb/ccrm9Configuration/$CCVER/$schema_file"
+
+$JAVA_HOME/bin/java -cp $CLASSPATH com.clarify.schemamgr.SchemaMgr -user_name $db_user -password $db_pass -db_server $jdbc_db_server -db_name $db_inst -replace $HOME/bb/ccrm9Configuration/$CCVER/$schema_file
+
